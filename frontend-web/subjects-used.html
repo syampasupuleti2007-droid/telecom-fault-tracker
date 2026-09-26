@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subjects Used | Telecom Fault Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #080c14;
+            --bg-card: rgba(17, 24, 39, 0.75);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --primary: #6366f1;
+            --accent-cyan: #06b6d4;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --heading-blue: #8fb4d6;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+
+        .page {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 3rem;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .topbar a {
+            text-decoration: none;
+            background: linear-gradient(135deg, var(--primary), #4f46e5);
+            color: white;
+            padding: 0.75rem 1.1rem;
+            border-radius: 10px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 12px 25px rgba(99, 102, 241, 0.22);
+        }
+
+        .topbar a:hover {
+            opacity: 0.95;
+        }
+
+        .content-box {
+            background: rgba(255,255,255,0.6);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            border-radius: 18px;
+            padding: 2rem 1.5rem;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+        }
+
+        .section-tag {
+            display: inline-block;
+            margin-bottom: 1rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #4f46e5;
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 4vw, 4rem);
+            line-height: 1.1;
+            letter-spacing: -0.05em;
+            font-weight: 800;
+            color: var(--heading-blue);
+            margin-bottom: 1.25rem;
+        }
+
+        h2 {
+            font-size: clamp(1.6rem, 2vw, 2.5rem);
+            margin-bottom: 0.75rem;
+            color: #111827;
+        }
+
+        p {
+            font-size: clamp(1.2rem, 1.6vw, 2rem);
+            line-height: 1.5;
+            margin-bottom: 1rem;
+            color: #1f2937;
+        }
+
+        strong {
+            color: #111827;
+        }
+
+        @media (max-width: 640px) {
+            .topbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .content-box {
+                padding: 1.5rem 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="topbar">
+            <a href="index.html"><span>←</span> Back to Dashboard</a>
+        </div>
+
+        <div class="content-box">
+            <span class="section-tag">Project Overview</span>
+            <h1>12. Telecom Subscriber &amp; Fault Tracking</h1>
+
+            <p><strong>Total Subjects Used:</strong> 5 major subjects</p>
+            <p><strong>Total Languages/Technologies Used:</strong> 6 main technologies</p>
+
+            <p><strong>Problem Statement:</strong> A telecom operator can't easily connect a customer complaint to the specific tower or fault causing it.</p>
+
+            <p><strong>Subjects Mainly Used in This Project:</strong> DBMS, DMGT, ADSA, OOPJ, and Python. These subjects are directly used for database modeling, graph/network analysis, object-oriented programming, and churn prediction in telecom operations.</p>
+
+            <p><strong>Languages and Tools Mainly Used in This Project:</strong> Java, Python, SQL, HTML, CSS, and JavaScript. Java handles the backend logic and fault-tracing operations, Python is used for churn prediction, SQL manages the database, and HTML/CSS/JavaScript build the web interface.</p>
+
+            <p><strong>Project Stack:</strong> Java backend services, SQL database, Python ML engine, web dashboard UI, graph-based topology analysis, and complaint-management flow for real telecom fault handling.</p>
+
+            <p><strong>Processing (How it works):</strong> Java traces fault paths through the tower graph when a complaint comes in. Python reads usage and complaint history, predicts churn probability, and Java uses the results to flag at-risk subscribers for retention follow-up.</p>
+        </div>
+    </div>
+</body>
+</html>

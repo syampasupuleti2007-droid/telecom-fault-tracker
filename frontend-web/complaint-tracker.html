@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complaint Tracker | Telecom Fault Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #080c14;
+            --bg-card: rgba(17, 24, 39, 0.82);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --primary: #6366f1;
+            --primary-soft: rgba(99, 102, 241, 0.18);
+            --accent-cyan: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            background:
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.10) 0px, transparent 50%),
+                var(--bg-dark);
+            color: var(--text-main);
+        }
+
+        .page {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 3rem;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .nav-btn {
+            text-decoration: none;
+            background: linear-gradient(135deg, var(--primary), #4f46e5);
+            color: white;
+            padding: 0.8rem 1.1rem;
+            border-radius: 10px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            box-shadow: 0 12px 25px rgba(99, 102, 241, 0.22);
+        }
+
+        .header-card {
+            background: rgba(17, 24, 39, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 1.5rem 1.8rem;
+            margin-bottom: 1.5rem;
+        }
+
+        h1 {
+            font-size: clamp(2.2rem, 4vw, 3.4rem);
+            letter-spacing: -0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.2rem 1.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.76rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+        }
+
+        .table-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 1rem 1.1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background: rgba(15, 23, 42, 0.7);
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        td {
+            color: var(--text-main);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.35rem 0.7rem;
+            border-radius: 999px;
+            font-size: 0.73rem;
+            font-weight: 700;
+        }
+
+        .open { background: rgba(239, 68, 68, 0.14); color: #fca5a5; }
+        .in_progress { background: rgba(245, 158, 11, 0.14); color: #fcd34d; }
+        .resolved { background: rgba(16, 185, 129, 0.14); color: #a7f3d0; }
+
+        .severity {
+            display: inline-block;
+            padding: 0.3rem 0.6rem;
+            border-radius: 8px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .low { background: rgba(16, 185, 129, 0.12); color: #86efac; }
+        .medium { background: rgba(245, 158, 11, 0.12); color: #fbbf24; }
+        .high { background: rgba(239, 68, 68, 0.12); color: #fca5a5; }
+        .critical { background: rgba(239, 68, 68, 0.2); color: #fecaca; }
+
+        @media (max-width: 768px) {
+            .topbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            table { font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="topbar">
+            <a class="nav-btn" href="index.html"><i class="fa-solid fa-arrow-left"></i> Back to Dashboard</a>
+        </div>
+
+        <div class="header-card">
+            <h1>Complaint Tracker</h1>
+            <div class="subtitle">Monitor subscriber issues, severity, and current resolution status.</div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-label">Total Complaints</div>
+                <div class="stat-value">6</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Open</div>
+                <div class="stat-value" style="color: var(--danger);">4</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">In Progress</div>
+                <div class="stat-value" style="color: var(--warning);">1</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Resolved</div>
+                <div class="stat-value" style="color: var(--success);">1</div>
+            </div>
+        </div>
+
+        <div class="table-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Subscriber</th>
+                        <th>Tower</th>
+                        <th>Category</th>
+                        <th>Severity</th>
+                        <th>Status</th>
+                        <th>Logged At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>#101</td>
+                        <td>Noah Bennett</td>
+                        <td>East Market</td>
+                        <td>Network Fault</td>
+                        <td><span class="severity high">High</span></td>
+                        <td><span class="badge open">Open</span></td>
+                        <td>2026-09-26 09:15</td>
+                    </tr>
+                    <tr>
+                        <td>#102</td>
+                        <td>Mia Patel</td>
+                        <td>East Market</td>
+                        <td>Network Fault</td>
+                        <td><span class="severity critical">Critical</span></td>
+                        <td><span class="badge in_progress">In Progress</span></td>
+                        <td>2026-09-26 09:40</td>
+                    </tr>
+                    <tr>
+                        <td>#103</td>
+                        <td>Sofia Kim</td>
+                        <td>East Market</td>
+                        <td>Call Drops</td>
+                        <td><span class="severity high">High</span></td>
+                        <td><span class="badge open">Open</span></td>
+                        <td>2026-09-26 10:05</td>
+                    </tr>
+                    <tr>
+                        <td>#104</td>
+                        <td>Isabella Diaz</td>
+                        <td>East Market</td>
+                        <td>Coverage</td>
+                        <td><span class="severity medium">Medium</span></td>
+                        <td><span class="badge open">Open</span></td>
+                        <td>2026-09-26 10:20</td>
+                    </tr>
+                    <tr>
+                        <td>#105</td>
+                        <td>Ava Morgan</td>
+                        <td>North Ridge</td>
+                        <td>Billing</td>
+                        <td><span class="severity low">Low</span></td>
+                        <td><span class="badge resolved">Resolved</span></td>
+                        <td>2026-09-25 14:10</td>
+                    </tr>
+                    <tr>
+                        <td>#106</td>
+                        <td>Emma Watson</td>
+                        <td>Metro Station</td>
+                        <td>Outage</td>
+                        <td><span class="severity critical">Critical</span></td>
+                        <td><span class="badge open">Open</span></td>
+                        <td>2026-09-26 10:45</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

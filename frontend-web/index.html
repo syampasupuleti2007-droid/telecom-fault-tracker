@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telecom Fault Tracker & Churn Prediction NOC Dashboard</title>
+    <meta name="description" content="Real-time telecom cell tower network fault tracking, graph topology visualizer, and subscriber churn risk prediction NOC platform.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-dark: #080c14;
+            --bg-card: rgba(17, 24, 39, 0.75);
+            --bg-card-hover: rgba(31, 41, 55, 0.85);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-glow: rgba(99, 102, 241, 0.4);
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.35);
+            --accent-cyan: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.4);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.10) 0px, transparent 50%);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Header Navigation */
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 2rem;
+            background: rgba(13, 18, 30, 0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 800;
+            font-size: 1.25rem;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-icon {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, var(--primary), var(--accent-cyan));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.1rem;
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        .nav-meta {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.9rem;
+            border-radius: 20px;
+            font-size: 0.825rem;
+            font-weight: 600;
+            background: rgba(16, 185, 129, 0.12);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-pill.warning-mode {
+            background: rgba(239, 68, 68, 0.12);
+            color: var(--danger);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        body.light-theme {
+            --bg-dark: #eef2ff;
+            --bg-card: rgba(255, 255, 255, 0.82);
+            --bg-card-hover: rgba(255, 255, 255, 0.95);
+            --border-color: rgba(15, 23, 42, 0.08);
+            --border-glow: rgba(99, 102, 241, 0.2);
+            --primary: #4f46e5;
+            --primary-glow: rgba(79, 70, 229, 0.18);
+            --accent-cyan: #0891b2;
+            --success: #059669;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --text-main: #111827;
+            --text-muted: #4b5563;
+            background-color: #f3f4f6;
+            background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.08) 0px, transparent 50%);
+            color: var(--text-main);
+        }
+
+        body.light-theme .navbar {
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        body.light-theme .brand {
+            background: linear-gradient(135deg, #111827 0%, #4f46e5 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        body.light-theme .panel,
+        body.light-theme .metric-card,
+        body.light-theme .risk-gauge-box,
+        body.light-theme .modal-card,
+        body.light-theme .form-card,
+        body.light-theme .canvas-wrapper {
+            background: rgba(255, 255, 255, 0.8);
+            color: var(--text-main);
+        }
+
+        body.light-theme .form-control,
+        body.light-theme .modal-card,
+        body.light-theme .table-responsive,
+        body.light-theme .panel,
+        body.light-theme .metric-card {
+            border-color: rgba(15, 23, 42, 0.08);
+        }
+
+        body.light-theme .form-control {
+            background: rgba(248, 250, 252, 0.9);
+            color: var(--text-main);
+        }
+
+        body.light-theme .clock-display,
+        body.light-theme .form-label,
+        body.light-theme .metric-sub,
+        body.light-theme .status-pill,
+        body.light-theme .risk-badge,
+        body.light-theme th,
+        body.light-theme .badge {
+            color: var(--text-main);
+        }
+
+        body.light-theme .clock-display,
+        body.light-theme .metric-sub,
+        body.light-theme th,
+        body.light-theme .status-pill {
+            opacity: 0.9;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: currentColor;
+            box-shadow: 0 0 8px currentColor;
+            animation: pulse-dot 1.8s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.85); }
+        }
+
+        .clock-display {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        /* Container Layout */
+        .dashboard-container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 1.5rem 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Grid Metrics */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .metric-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.25s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--border-glow);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .metric-info h3 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 0.4rem;
+        }
+
+        .metric-val {
+            font-size: 1.85rem;
+            font-weight: 800;
+            font-family: var(--font-mono);
+            letter-spacing: -0.02em;
+        }
+
+        .metric-sub {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+        }
+
+        .metric-icon-box {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.35rem;
+        }
+
+        .icon-indigo { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
+        .icon-red { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+        .icon-cyan { background: rgba(6, 182, 212, 0.15); color: #38bdf8; }
+        .icon-emerald { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+
+        /* Main Workspace Split */
+        .workspace-split {
+            display: grid;
+            grid-template-columns: 1.6fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 1024px) {
+            .workspace-split {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Glass Panel */
+        .panel {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.9rem;
+        }
+
+        .panel-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .panel-title i {
+            color: var(--primary);
+        }
+
+        /* Topology Canvas Container */
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+            height: 420px;
+            background: rgba(10, 14, 23, 0.9);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+
+        canvas#topologyCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .graph-controls {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            display: flex;
+            gap: 0.5rem;
+            z-index: 10;
+        }
+
+        .btn {
+            background: rgba(31, 41, 55, 0.8);
+            color: #fff;
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 0.9rem;
+            border-radius: 8px;
+            font-size: 0.825rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+            box-shadow: 0 0 12px var(--primary-glow);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+        }
+
+        .btn-danger:hover {
+            background: var(--danger);
+            border-color: var(--danger);
+            color: #fff;
+        }
+
+        /* Predictor Widget */
+        .predictor-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .form-label {
+            font-size: 0.825rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .form-control {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.6rem 0.8rem;
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+        }
+
+        input[type="range"] {
+            accent-color: var(--primary);
+            width: 100%;
+        }
+
+        /* Churn Gauge Meter */
+        .risk-gauge-box {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            text-align: center;
+        }
+
+        .gauge-bar-bg {
+            width: 100%;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .gauge-bar-fill {
+            height: 100%;
+            width: 15%;
+            background: linear-gradient(90deg, var(--success), var(--warning), var(--danger));
+            transition: width 0.4s ease;
+            border-radius: 6px;
+        }
+
+        .risk-value-text {
+            font-size: 2.2rem;
+            font-weight: 800;
+            font-family: var(--font-mono);
+        }
+
+        .risk-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        .risk-badge.LOW { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .risk-badge.MEDIUM { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+        .risk-badge.HIGH { background: rgba(239, 68, 68, 0.25); color: #f87171; }
+        .risk-badge.CRITICAL { background: rgba(239, 68, 68, 0.4); color: #ff0000; box-shadow: 0 0 10px rgba(239,68,68,0.5); }
+
+        /* Tables */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.875rem;
+        }
+
+        th {
+            background: rgba(15, 23, 42, 0.8);
+            color: var(--text-muted);
+            font-weight: 600;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+
+        td {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .badge {
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-open { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+        .badge-in_progress { background: rgba(245, 158, 11, 0.2); color: #fde047; }
+        .badge-resolved { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+
+        /* Modal Popup */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.25s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            padding: 1.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .close-btn:hover { color: #fff; }
+
+        .settings-wrap {
+            position: relative;
+        }
+
+        .theme-select {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            border-radius: 8px;
+            padding: 0.55rem 0.8rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            outline: none;
+        }
+
+        body.light-theme .theme-select {
+            background: rgba(255, 255, 255, 0.7);
+            color: var(--text-main);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <nav class="navbar">
+        <div class="brand">
+            <div class="brand-icon">
+                <i class="fa-solid fa-tower-cell"></i>
+            </div>
+            <span>Telecom Fault Tracker &amp; Churn Engine</span>
+        </div>
+        <div class="nav-meta">
+            <div id="systemStatusPill" class="status-pill">
+                <div class="status-dot"></div>
+                <span id="statusPillText">Network Mesh Operational</span>
+            </div>
+            <a href="register.html" class="btn" style="text-decoration: none; background: rgba(99, 102, 241, 0.18); border-color: rgba(99, 102, 241, 0.4);">
+                <i class="fa-solid fa-user-plus"></i> Register
+            </a>
+            <a href="subjects-used.html" class="btn" style="text-decoration: none; background: rgba(6, 182, 212, 0.12); border-color: rgba(6, 182, 212, 0.4);">
+                <i class="fa-solid fa-book-open"></i> Subjects Used
+            </a>
+            <a href="complaint-tracker.html" class="btn" style="text-decoration: none; background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.4);">
+                <i class="fa-solid fa-clipboard-list"></i> Complaint Tracker
+            </a>
+            <div class="settings-wrap">
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
+                    <i class="fa-solid fa-gear"></i>
+                    <select id="themeSelector" class="theme-select">
+                        <option value="dark">Dark</option>
+                        <option value="light">Light</option>
+                    </select>
+                </label>
+            </div>
+            <div class="clock-display" id="liveClock">00:00:00 UTC</div>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <div class="dashboard-container">
+
+        <!-- Metrics Row -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-info">
+                    <h3>Cell Towers</h3>
+                    <div class="metric-val" id="metricTotalTowers">8</div>
+                    <div class="metric-sub" id="metricHealthyTowers">6 Operational</div>
+                </div>
+                <div class="metric-icon-box icon-indigo">
+                    <i class="fa-solid fa-radio"></i>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-info">
+                    <h3>Fault Outages</h3>
+                    <div class="metric-val" id="metricFaultyTowers" style="color: var(--danger);">2</div>
+                    <div class="metric-sub">Active Cell Faults</div>
+                </div>
+                <div class="metric-icon-box icon-red">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-info">
+                    <h3>Subscribers</h3>
+                    <div class="metric-val" id="metricTotalSubscribers">12</div>
+                    <div class="metric-sub">Active Accounts</div>
+                </div>
+                <div class="metric-icon-box icon-cyan">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-info">
+                    <h3>High Risk Churn</h3>
+                    <div class="metric-val" id="metricAtRiskSubscribers" style="color: var(--warning);">5</div>
+                    <div class="metric-sub">Churn Prob &gt; 70%</div>
+                </div>
+                <div class="metric-icon-box icon-emerald">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upper Workspace: Topology Graph & ML Predictor -->
+        <div class="workspace-split">
+
+            <!-- Panel 1: Interactive Cell Network Graph Topology Visualizer -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fa-solid fa-network-wired"></i>
+                        <span>Mesh Network Topology Graph</span>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn" id="btnResetGraphView"><i class="fa-solid fa-rotate-left"></i> Reset Graph</button>
+                        <button class="btn btn-danger" id="btnSimulateOutage"><i class="fa-solid fa-bolt"></i> Simulate Outage</button>
+                    </div>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="topologyCanvas"></canvas>
+                </div>
+                <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; justify-content: space-between;">
+                    <span><i class="fa-solid fa-circle" style="color: var(--success);"></i> Operational Tower</span>
+                    <span><i class="fa-solid fa-circle" style="color: var(--danger);"></i> Faulty Tower (Pulsing)</span>
+                    <span><i class="fa-solid fa-info-circle"></i> Click any tower node to inspect or toggle fault</span>
+                </div>
+            </div>
+
+            <!-- Panel 2: Real-time AI Subscriber Churn Prediction Engine -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fa-solid fa-wand-magic-sparkles" style="color: #a5b4fc;"></i>
+                        <span>AI Subscriber Churn Predictor</span>
+                    </div>
+                    <span class="badge" style="background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.3); font-size: 0.75rem;">
+                        <i class="fa-solid fa-microchip"></i> Random Forest v1.0
+                    </span>
+                </div>
+
+                <div class="risk-gauge-box">
+                    <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; display: flex; justify-content: space-between; width: 100%;">
+                        <span>Predicted Churn Risk</span>
+                        <span id="lblAiConfidence" style="color: var(--accent-cyan);">94.5% AI Confidence</span>
+                    </div>
+                    <div class="risk-value-text" id="gaugeProbVal">12.0%</div>
+                    <div class="gauge-bar-bg">
+                        <div class="gauge-bar-fill" id="gaugeBarFill" style="width: 12%;"></div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <div class="risk-badge LOW" id="gaugeRiskBadge">LOW RISK</div>
+                        <span id="aiModelStatusPill" style="font-size: 0.75rem; color: var(--text-muted);"><i class="fa-solid fa-circle-check" style="color: var(--success);"></i> AI Model Synced</span>
+                    </div>
+                </div>
+
+                <form class="predictor-form" id="mlForm">
+                    <div class="form-group">
+                        <div class="form-label">
+                            <span>Tenure Months</span>
+                            <span id="lblTenureVal" style="color: var(--primary);">12 months</span>
+                        </div>
+                        <input type="range" id="inputTenure" min="1" max="72" value="12">
+                    </div>
+
+                    <div class="form-group">
+                        <div class="form-label">
+                            <span>Call Drops Count</span>
+                            <span id="lblCallDropsVal" style="color: var(--warning);">4 drops</span>
+                        </div>
+                        <input type="range" id="inputCallDrops" min="0" max="30" value="4">
+                    </div>
+
+                    <div class="form-group">
+                        <div class="form-label">
+                            <span>Monthly Plan Fee ($)</span>
+                            <span id="lblFeeVal" style="color: var(--accent-cyan);">$59.99</span>
+                        </div>
+                        <input type="range" id="inputFee" min="20" max="150" step="5" value="60">
+                    </div>
+
+                    <div class="form-group">
+                        <div class="form-label">
+                            <span>Complaint Count</span>
+                            <span id="lblComplaintVal" style="color: var(--danger);">1 complaint</span>
+                        </div>
+                        <input type="range" id="inputComplaints" min="0" max="10" value="1">
+                    </div>
+
+                    <div class="form-group" style="flex-direction: row; align-items: center; justify-content: space-between; margin-top: 0.25rem;">
+                        <span class="form-label" style="margin: 0;">Connected Cell Tower Status</span>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                            <input type="checkbox" id="chkTowerFaulty" style="accent-color: var(--danger);">
+                            <span style="font-size: 0.85rem; color: var(--text-main); font-weight: 600;">Tower Outage Active</span>
+                        </label>
+                    </div>
+
+                    <button type="button" class="btn" id="btnRunAiPredict" style="width: 100%; justify-content: center; padding: 0.75rem; background: linear-gradient(135deg, var(--primary), #4f46e5); font-size: 0.9rem; margin-top: 0.5rem;">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Predict Using AI Engine
+                    </button>
+                </form>
+
+                <!-- AI Explainability & Mitigation Box -->
+                <div id="aiAnalysisBox" style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-color); border-radius: 12px; padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem;">
+                    <div style="font-size: 0.8rem; font-weight: 700; color: #a5b4fc; display: flex; align-items: center; gap: 0.4rem;">
+                        <i class="fa-solid fa-diagram-project"></i> AI Feature Importance Impact
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.75rem;">
+                        <div>
+                            <div style="display: flex; justify-content: space-between; color: var(--text-muted); margin-bottom: 2px;">
+                                <span>Call Drop Rate</span>
+                                <span style="font-family: var(--font-mono); color: #f87171;">35.2% Impact</span>
+                            </div>
+                            <div style="height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px;">
+                                <div id="barImpCallDrops" style="height: 100%; width: 75%; background: var(--danger); border-radius: 2px;"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div style="display: flex; justify-content: space-between; color: var(--text-muted); margin-bottom: 2px;">
+                                <span>Tower Outage Status</span>
+                                <span style="font-family: var(--font-mono); color: #fbbf24;">28.4% Impact</span>
+                            </div>
+                            <div style="height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px;">
+                                <div id="barImpTower" style="height: 100%; width: 60%; background: var(--warning); border-radius: 2px;"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div style="display: flex; justify-content: space-between; color: var(--text-muted); margin-bottom: 2px;">
+                                <span>Account Tenure</span>
+                                <span style="font-family: var(--font-mono); color: #818cf8;">18.6% Impact</span>
+                            </div>
+                            <div style="height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px;">
+                                <div id="barImpTenure" style="height: 100%; width: 40%; background: var(--primary); border-radius: 2px;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="border-top: 1px dashed var(--border-color); padding-top: 0.5rem; margin-top: 0.2rem;">
+                        <div style="font-size: 0.75rem; font-weight: 700; color: var(--success); margin-bottom: 0.2rem;">
+                            <i class="fa-solid fa-lightbulb"></i> AI Mitigation Recommendation:
+                        </div>
+                        <div id="txtAiRecommendation" style="font-size: 0.75rem; color: var(--text-main); line-height: 1.4;">
+                            Reroute subscriber connection to nearest operational cell tower 'North Ridge' to reduce churn risk by 42%.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lower Workspace: Complaints & High Risk Subscribers -->
+        <div class="workspace-split">
+
+            <!-- Panel 3: Active Customer Complaints Console -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fa-solid fa-headset"></i>
+                        <span>Customer Complaints Tracker</span>
+                    </div>
+                    <button class="btn" id="btnOpenNewComplaintModal"><i class="fa-solid fa-plus"></i> Log Complaint</button>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Subscriber</th>
+                                <th>Tower</th>
+                                <th>Category</th>
+                                <th>Severity</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="complaintsTableBody">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Panel 4: High Churn Risk Subscribers & Network Reroute -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fa-solid fa-user-shield"></i>
+                        <span>At-Risk Subscriber Radar &amp; Backup Reroute</span>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Subscriber</th>
+                                <th>Tower</th>
+                                <th>Call Drops</th>
+                                <th>Churn Risk</th>
+                                <th>Backup Tower</th>
+                            </tr>
+                        </thead>
+                        <tbody id="riskSubscribersTableBody">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal: Log New Complaint -->
+    <div class="modal-overlay" id="complaintModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="panel-title">
+                    <i class="fa-solid fa-file-circle-plus"></i>
+                    <span>Log New Customer Complaint</span>
+                </div>
+                <button class="close-btn" id="btnCloseModal">&times;</button>
+            </div>
+            <form id="newComplaintForm" class="predictor-form">
+                <div class="form-group">
+                    <label class="form-label">Subscriber</label>
+                    <select class="form-control" id="modalSubSelect">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Cell Tower</label>
+                    <select class="form-control" id="modalTowerSelect">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <select class="form-control" id="modalCategorySelect">
+                        <option value="network_fault">Network Fault / Outage</option>
+                        <option value="call_drops">Persistent Call Drops</option>
+                        <option value="slow_data">Slow Data / Degraded Bandwidth</option>
+                        <option value="coverage">Coverage Deadzone</option>
+                        <option value="billing">Billing Dispute</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Severity</label>
+                    <select class="form-control" id="modalSeveritySelect">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-control" id="modalDescription" rows="3" placeholder="Describe the issue reported by subscriber..."></textarea>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 0.5rem;">
+                    <button type="button" class="btn" id="btnCancelModal" style="background: transparent;">Cancel</button>
+                    <button type="submit" class="btn"><i class="fa-solid fa-paper-plane"></i> Submit Complaint</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        if (!localStorage.getItem('telecom_registered')) {
+            window.location.href = 'register.html';
+        }
+
+        const savedTheme = localStorage.getItem('telecom_theme') || 'dark';
+        const themeSelector = document.getElementById('themeSelector');
+
+        function applyTheme(theme) {
+            document.body.classList.toggle('light-theme', theme === 'light');
+            if (themeSelector) {
+                themeSelector.value = theme;
+            }
+            localStorage.setItem('telecom_theme', theme);
+        }
+
+        applyTheme(savedTheme);
+
+        if (themeSelector) {
+            themeSelector.addEventListener('change', (event) => {
+                applyTheme(event.target.value);
+            });
+        }
+    </script>
+
+    <!-- Application Script -->
+    <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "accuracy": 0.768,
+  "roc_auc": 0.831,
+  "feature_importances": {
+    "tenure_months": 0.3598,
+    "call_drops": 0.1989,
+    "monthly_fee": 0.0564,
+    "complaint_count": 0.1613,
+    "is_tower_faulty": 0.2235
+  },
+  "feature_cols": [
+    "tenure_months",
+    "call_drops",
+    "monthly_fee",
+    "complaint_count",
+    "is_tower_faulty"
+  ]
+}
