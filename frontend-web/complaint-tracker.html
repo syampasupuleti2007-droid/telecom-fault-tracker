@@ -147,6 +147,12 @@
             font-weight: 700;
         }
 
+        .empty-state {
+            padding: 1.25rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
         .open { background: rgba(239, 68, 68, 0.14); color: #fca5a5; }
         .in_progress { background: rgba(245, 158, 11, 0.14); color: #fcd34d; }
         .resolved { background: rgba(16, 185, 129, 0.14); color: #a7f3d0; }
@@ -189,19 +195,19 @@
         <div class="stats-grid">
             <div class="stat-box">
                 <div class="stat-label">Total Complaints</div>
-                <div class="stat-value">6</div>
+                <div class="stat-value" id="totalComplaintsValue">0</div>
             </div>
             <div class="stat-box">
                 <div class="stat-label">Open</div>
-                <div class="stat-value" style="color: var(--danger);">4</div>
+                <div class="stat-value" id="openComplaintsValue" style="color: var(--danger);">0</div>
             </div>
             <div class="stat-box">
                 <div class="stat-label">In Progress</div>
-                <div class="stat-value" style="color: var(--warning);">1</div>
+                <div class="stat-value" id="progressComplaintsValue" style="color: var(--warning);">0</div>
             </div>
             <div class="stat-box">
                 <div class="stat-label">Resolved</div>
-                <div class="stat-value" style="color: var(--success);">1</div>
+                <div class="stat-value" id="resolvedComplaintsValue" style="color: var(--success);">0</div>
             </div>
         </div>
 
@@ -218,64 +224,100 @@
                         <th>Logged At</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr>
-                        <td>#101</td>
-                        <td>Noah Bennett</td>
-                        <td>East Market</td>
-                        <td>Network Fault</td>
-                        <td><span class="severity high">High</span></td>
-                        <td><span class="badge open">Open</span></td>
-                        <td>2026-09-26 09:15</td>
-                    </tr>
-                    <tr>
-                        <td>#102</td>
-                        <td>Mia Patel</td>
-                        <td>East Market</td>
-                        <td>Network Fault</td>
-                        <td><span class="severity critical">Critical</span></td>
-                        <td><span class="badge in_progress">In Progress</span></td>
-                        <td>2026-09-26 09:40</td>
-                    </tr>
-                    <tr>
-                        <td>#103</td>
-                        <td>Sofia Kim</td>
-                        <td>East Market</td>
-                        <td>Call Drops</td>
-                        <td><span class="severity high">High</span></td>
-                        <td><span class="badge open">Open</span></td>
-                        <td>2026-09-26 10:05</td>
-                    </tr>
-                    <tr>
-                        <td>#104</td>
-                        <td>Isabella Diaz</td>
-                        <td>East Market</td>
-                        <td>Coverage</td>
-                        <td><span class="severity medium">Medium</span></td>
-                        <td><span class="badge open">Open</span></td>
-                        <td>2026-09-26 10:20</td>
-                    </tr>
-                    <tr>
-                        <td>#105</td>
-                        <td>Ava Morgan</td>
-                        <td>North Ridge</td>
-                        <td>Billing</td>
-                        <td><span class="severity low">Low</span></td>
-                        <td><span class="badge resolved">Resolved</span></td>
-                        <td>2026-09-25 14:10</td>
-                    </tr>
-                    <tr>
-                        <td>#106</td>
-                        <td>Emma Watson</td>
-                        <td>Metro Station</td>
-                        <td>Outage</td>
-                        <td><span class="severity critical">Critical</span></td>
-                        <td><span class="badge open">Open</span></td>
-                        <td>2026-09-26 10:45</td>
-                    </tr>
-                </tbody>
+                <tbody id="complaintTrackerBody"></tbody>
             </table>
         </div>
     </div>
+
+    <script>
+        const STORAGE_KEY = "telecom_complaints";
+        const subscriberStorageKey = "telecom_subscribers";
+
+        const defaultComplaints = [
+            { complaintId: 1, subscriberId: 2, towerId: 3, category: "network_fault", description: "Repeated dropped calls near East Market tower.", severity: "high", status: "open", loggedAt: "2026-09-26 09:15:00" },
+            { complaintId: 2, subscriberId: 3, towerId: 3, category: "network_fault", description: "Intermittent service and slow data around East Market.", severity: "critical", status: "in_progress", loggedAt: "2026-09-26 09:40:00" },
+            { complaintId: 3, subscriberId: 5, towerId: 3, category: "call_drops", description: "Calls disconnect several times each day.", severity: "high", status: "open", loggedAt: "2026-09-26 10:05:00" },
+            { complaintId: 4, subscriberId: 7, towerId: 3, category: "network_fault", description: "No reliable signal during evening commute.", severity: "medium", status: "open", loggedAt: "2026-09-26 10:20:00" },
+            { complaintId: 5, subscriberId: 1, towerId: 2, category: "billing", description: "Question about international usage charge.", severity: "low", status: "resolved", loggedAt: "2026-09-25 14:10:00" },
+            { complaintId: 6, subscriberId: 9, towerId: 7, category: "network_fault", description: "Complete outage in Metro Station area.", severity: "critical", status: "open", loggedAt: "2026-09-26 10:45:00" }
+        ];
+
+        function getStoredValue(key) {
+            try {
+                const raw = localStorage.getItem(key);
+                return raw ? JSON.parse(raw) : [];
+            } catch {
+                return [];
+            }
+        }
+
+        function getSubscriberById(id) {
+            const subscribers = getStoredValue(subscriberStorageKey);
+            return subscribers.find(s => Number(s.subscriberId) === Number(id)) || null;
+        }
+
+        function getTowerName(id) {
+            const towerMap = {
+                1: "Central Exchange",
+                2: "North Ridge",
+                3: "East Market",
+                4: "South Point",
+                5: "West Park",
+                6: "Harbor View",
+                7: "Metro Station",
+                8: "Tech Hub"
+            };
+            return towerMap[id] || `Tower #${id}`;
+        }
+
+        function formatCategory(value) {
+            return String(value || "General").replace(/_/g, " ").replace(/\b\w/g, ch => ch.toUpperCase());
+        }
+
+        function renderComplaintTracker() {
+            const complaints = getStoredValue(STORAGE_KEY);
+            const safeComplaints = complaints.length ? complaints : defaultComplaints;
+
+            const total = safeComplaints.length;
+            const open = safeComplaints.filter(c => c.status === "open").length;
+            const progress = safeComplaints.filter(c => c.status === "in_progress").length;
+            const resolved = safeComplaints.filter(c => c.status === "resolved").length;
+
+            document.getElementById("totalComplaintsValue").textContent = total;
+            document.getElementById("openComplaintsValue").textContent = open;
+            document.getElementById("progressComplaintsValue").textContent = progress;
+            document.getElementById("resolvedComplaintsValue").textContent = resolved;
+
+            const tbody = document.getElementById("complaintTrackerBody");
+            if (!tbody) return;
+
+            if (!safeComplaints.length) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No complaints recorded yet.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = safeComplaints.map(c => {
+                const subscriber = getSubscriberById(c.subscriberId);
+                const severityClass = String(c.severity || "medium").toLowerCase();
+                const statusClass = String(c.status || "open").replace(/\s+/g, "_").toLowerCase();
+                const statusLabel = statusClass === "in_progress" ? "In Progress" : statusClass === "resolved" ? "Resolved" : "Open";
+
+                return `
+                    <tr>
+                        <td>#${c.complaintId}</td>
+                        <td>${subscriber ? subscriber.name : `Sub #${c.subscriberId}`}</td>
+                        <td>${getTowerName(c.towerId)}</td>
+                        <td>${formatCategory(c.category)}</td>
+                        <td><span class="severity ${severityClass}">${String(c.severity || "Medium").toUpperCase()}</span></td>
+                        <td><span class="badge ${statusClass}">${statusLabel}</span></td>
+                        <td>${new Date(c.loggedAt || Date.now()).toLocaleString()}</td>
+                    </tr>
+                `;
+            }).join("");
+        }
+
+        document.addEventListener("DOMContentLoaded", renderComplaintTracker);
+        window.addEventListener("storage", renderComplaintTracker);
+    </script>
 </body>
 </html>

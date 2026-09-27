@@ -13,6 +13,37 @@ function getStoredSubscribers() {
     }
 }
 
+function getStoredComplaints() {
+    try {
+        const saved = localStorage.getItem("telecom_complaints");
+        return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+function saveComplaintsToStorage() {
+    try {
+        localStorage.setItem("telecom_complaints", JSON.stringify(state.complaints));
+    } catch (error) {
+        // Ignore storage errors for browser-incompatible environments.
+    }
+}
+
+function getNextComplaintId() {
+    if (!state.complaints || state.complaints.length === 0) return 1;
+    return Math.max(...state.complaints.map(c => Number(c.complaintId) || 0)) + 1;
+}
+
+const defaultComplaints = [
+    { complaintId: 1, subscriberId: 2, towerId: 3, category: "network_fault", description: "Repeated dropped calls near East Market tower.", severity: "high", status: "open", loggedAt: "2026-09-26 09:15:00" },
+    { complaintId: 2, subscriberId: 3, towerId: 3, category: "network_fault", description: "Intermittent service and slow data around East Market.", severity: "critical", status: "in_progress", loggedAt: "2026-09-26 09:40:00" },
+    { complaintId: 3, subscriberId: 5, towerId: 3, category: "call_drops", description: "Calls disconnect several times each day.", severity: "high", status: "open", loggedAt: "2026-09-26 10:05:00" },
+    { complaintId: 4, subscriberId: 7, towerId: 3, category: "network_fault", description: "No reliable signal during evening commute.", severity: "medium", status: "open", loggedAt: "2026-09-26 10:20:00" },
+    { complaintId: 5, subscriberId: 1, towerId: 2, category: "billing", description: "Question about international usage charge.", severity: "low", status: "resolved", loggedAt: "2026-09-25 14:10:00" },
+    { complaintId: 6, subscriberId: 9, towerId: 7, category: "network_fault", description: "Complete outage in Metro Station area.", severity: "critical", status: "open", loggedAt: "2026-09-26 10:45:00" }
+];
+
 // System State
 const state = {
     towers: [
@@ -50,14 +81,7 @@ const state = {
         { subscriberId: 9, name: "Emma Watson", email: "emma.watson@telecom.example.com", phone: "+15550001009", connectedTowerId: 7, tenureMonths: 3, callDrops: 28, churned: true, churnProb: 0.98 },
         { subscriberId: 10, name: "Oliver Taylor", email: "oliver.taylor@telecom.example.com", phone: "+15550001010", connectedTowerId: 8, tenureMonths: 48, callDrops: 3, churned: false, churnProb: 0.08 }
     ].concat(getStoredSubscribers()),
-    complaints: [
-        { complaintId: 1, subscriberId: 2, towerId: 3, category: "network_fault", description: "Repeated dropped calls near East Market tower.", severity: "high", status: "open", loggedAt: "2026-09-26 09:15:00" },
-        { complaintId: 2, subscriberId: 3, towerId: 3, category: "network_fault", description: "Intermittent service and slow data around East Market.", severity: "critical", status: "in_progress", loggedAt: "2026-09-26 09:40:00" },
-        { complaintId: 3, subscriberId: 5, towerId: 3, category: "call_drops", description: "Calls disconnect several times each day.", severity: "high", status: "open", loggedAt: "2026-09-26 10:05:00" },
-        { complaintId: 4, subscriberId: 7, towerId: 3, category: "network_fault", description: "No reliable signal during evening commute.", severity: "medium", status: "open", loggedAt: "2026-09-26 10:20:00" },
-        { complaintId: 5, subscriberId: 1, towerId: 2, category: "billing", description: "Question about international usage charge.", severity: "low", status: "resolved", loggedAt: "2026-09-25 14:10:00" },
-        { complaintId: 6, subscriberId: 9, towerId: 7, category: "network_fault", description: "Complete outage in Metro Station area.", severity: "critical", status: "open", loggedAt: "2026-09-26 10:45:00" }
-    ],
+    complaints: getStoredComplaints().length > 0 ? getStoredComplaints() : defaultComplaints,
     selectedTower: null,
     backendConnected: false,
     draggedNode: null
@@ -132,6 +156,7 @@ async function fetchBackendData() {
             const compData = await compRes.json();
             if (Array.isArray(compData) && compData.length > 0) {
                 state.complaints = compData;
+                saveComplaintsToStorage();
             }
         }
 
@@ -663,7 +688,7 @@ function setupEventListeners() {
 
                 // Add a critical complaint automatically
                 state.complaints.unshift({
-                    complaintId: state.complaints.length + 10,
+                    complaintId: getNextComplaintId(),
                     subscriberId: Math.floor(Math.random() * 10) + 1,
                     towerId: randomTower.towerId,
                     category: "network_fault",
@@ -672,6 +697,8 @@ function setupEventListeners() {
                     status: "open",
                     loggedAt: new Date().toISOString()
                 });
+
+                saveComplaintsToStorage();
 
                 renderAll();
             }
@@ -706,7 +733,7 @@ function setupEventListeners() {
             const desc = document.getElementById("modalDescription").value || "Subscriber reported network degradation.";
 
             const newComp = {
-                complaintId: state.complaints.length + 1,
+                complaintId: getNextComplaintId(),
                 subscriberId: subId,
                 towerId: towerId,
                 category: category,
@@ -739,6 +766,7 @@ function setupEventListeners() {
             }
 
             state.complaints.unshift(newComp);
+            saveComplaintsToStorage();
 
             // Check if complaints on tower trigger fault
             const towerOpenCount = state.complaints.filter(c => c.towerId === towerId && c.status === "open").length;
