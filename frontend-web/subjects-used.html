@@ -7,29 +7,46 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
-            --bg-dark: #080c14;
-            --bg-card: rgba(17, 24, 39, 0.75);
-            --border-color: rgba(255, 255, 255, 0.08);
+            --bg-dark: #081120;
+            --bg-panel: rgba(15, 23, 42, 0.78);
+            --bg-panel-strong: rgba(17, 24, 39, 0.9);
+            --bg-soft: rgba(148, 163, 184, 0.08);
+            --border: rgba(148, 163, 184, 0.18);
             --primary: #6366f1;
-            --accent-cyan: #06b6d4;
-            --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
-            --heading-blue: #8fb4d6;
+            --primary-strong: #4f46e5;
+            --accent-cyan: #22d3ee;
+            --accent-green: #34d399;
+            --text-main: #e5eefb;
+            --text-soft: #b7c2d6;
+            --text-dim: #8ca0bd;
+            --shadow: 0 18px 45px rgba(15, 23, 42, 0.28);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
 
         body {
             min-height: 100vh;
             font-family: 'Inter', sans-serif;
-            background: #f3f4f6;
-            color: #1f2937;
+            background:
+                radial-gradient(circle at top left, rgba(99, 102, 241, 0.22), transparent 30%),
+                radial-gradient(circle at bottom right, rgba(34, 211, 238, 0.14), transparent 28%),
+                linear-gradient(135deg, #050b16 0%, #0b1220 45%, #0f172a 100%);
+            color: var(--text-main);
         }
 
         .page {
-            max-width: 1400px;
+            max-width: 1280px;
             margin: 0 auto;
             padding: 2rem 1.5rem 3rem;
         }
@@ -39,78 +56,263 @@
             justify-content: space-between;
             align-items: center;
             gap: 1rem;
-            margin-bottom: 1.25rem;
+            margin-bottom: 1.5rem;
         }
 
-        .topbar a {
-            text-decoration: none;
-            background: linear-gradient(135deg, var(--primary), #4f46e5);
-            color: white;
-            padding: 0.75rem 1.1rem;
-            border-radius: 10px;
-            font-weight: 700;
+        .brand {
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-            box-shadow: 0 12px 25px rgba(99, 102, 241, 0.22);
-        }
-
-        .topbar a:hover {
-            opacity: 0.95;
-        }
-
-        .content-box {
-            background: rgba(255,255,255,0.6);
-            border: 1px solid rgba(15, 23, 42, 0.08);
-            border-radius: 18px;
-            padding: 2rem 1.5rem;
-            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
-        }
-
-        .section-tag {
-            display: inline-block;
-            margin-bottom: 1rem;
-            font-size: 0.78rem;
+            gap: 0.75rem;
+            font-size: 0.92rem;
             font-weight: 700;
             letter-spacing: 0.08em;
             text-transform: uppercase;
-            color: #4f46e5;
+            color: var(--text-soft);
+        }
+
+        .brand-mark {
+            width: 2.4rem;
+            height: 2.4rem;
+            border-radius: 0.8rem;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(135deg, var(--primary), var(--accent-cyan));
+            box-shadow: 0 0 25px rgba(99, 102, 241, 0.45);
+            color: white;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            color: white;
+            background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 0.8rem 1.15rem;
+            border-radius: 12px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.55rem;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .back-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 20px 30px rgba(79, 70, 229, 0.25);
+        }
+
+        .content-panel {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid var(--border);
+            border-radius: 26px;
+            padding: clamp(1.2rem, 2vw, 2rem);
+            backdrop-filter: blur(14px);
+            box-shadow: var(--shadow);
+        }
+
+        .hero {
+            position: relative;
+            padding: 1rem 0 1.4rem;
+            margin-bottom: 1.25rem;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            inset: 0 auto auto 0;
+            width: 180px;
+            height: 180px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.22), transparent 60%);
+            filter: blur(20px);
+            z-index: 0;
+        }
+
+        .eyebrow {
+            position: relative;
+            z-index: 1;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            background: rgba(15, 118, 110, 0.12);
+            color: var(--accent-green);
+            border: 1px solid rgba(52, 211, 153, 0.25);
+            padding: 0.45rem 0.8rem;
+            border-radius: 999px;
+            font-size: 0.74rem;
+            letter-spacing: 0.12em;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
         }
 
         h1 {
-            font-size: clamp(2.5rem, 4vw, 4rem);
-            line-height: 1.1;
-            letter-spacing: -0.05em;
-            font-weight: 800;
-            color: var(--heading-blue);
-            margin-bottom: 1.25rem;
-        }
-
-        h2 {
-            font-size: clamp(1.6rem, 2vw, 2.5rem);
+            position: relative;
+            z-index: 1;
+            font-size: clamp(2.4rem, 5vw, 4rem);
+            line-height: 1.04;
+            letter-spacing: -0.06em;
             margin-bottom: 0.75rem;
-            color: #111827;
+            color: #dfe9ff;
         }
 
-        p {
-            font-size: clamp(1.2rem, 1.6vw, 2rem);
-            line-height: 1.5;
-            margin-bottom: 1rem;
-            color: #1f2937;
+        .subtitle {
+            position: relative;
+            z-index: 1;
+            max-width: 64rem;
+            font-size: 1.08rem;
+            line-height: 1.7;
+            color: var(--text-soft);
         }
 
-        strong {
-            color: #111827;
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0 1.75rem;
+        }
+
+        .stat-card {
+            padding: 1.15rem 1rem 1rem;
+            border-radius: 18px;
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72));
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+        }
+
+        .stat-icon {
+            width: 2.25rem;
+            height: 2.25rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            background: rgba(99, 102, 241, 0.15);
+            color: #b9c3ff;
+            margin-bottom: 0.8rem;
+        }
+
+        .stat-card .label {
+            display: block;
+            color: var(--text-dim);
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 0.45rem;
+        }
+
+        .stat-card strong {
+            display: block;
+            font-size: clamp(1.8rem, 3vw, 2.4rem);
+            letter-spacing: -0.05em;
+            margin-bottom: 0.3rem;
+            color: white;
+        }
+
+        .stat-card small {
+            color: var(--text-soft);
+            font-size: 0.8rem;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .info-card {
+            background: rgba(15, 23, 42, 0.72);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            border-radius: 20px;
+            padding: 1.2rem 1.1rem;
+        }
+
+        .info-card.wide {
+            grid-column: span 2;
+        }
+
+        .info-card.accent {
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.16), rgba(34, 211, 238, 0.08));
+        }
+
+        .info-card h2 {
+            font-size: 1.2rem;
+            margin-bottom: 0.8rem;
+            color: #edf6ff;
+        }
+
+        .info-card p,
+        .info-card li {
+            color: var(--text-soft);
+            line-height: 1.7;
+            font-size: 1rem;
+        }
+
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.48rem 0.8rem;
+            border-radius: 999px;
+            background: rgba(99, 102, 241, 0.12);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            color: #dfe7ff;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        .info-card ul {
+            margin-left: 1.1rem;
+            list-style: disc;
+        }
+
+        .info-card ol {
+            margin-left: 1.2rem;
+            display: grid;
+            gap: 0.4rem;
+        }
+
+        .info-card strong {
+            color: #f7fbff;
+        }
+
+        @media (max-width: 860px) {
+            .stats-row,
+            .content-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .info-card.wide {
+                grid-column: span 2;
+            }
         }
 
         @media (max-width: 640px) {
+            .page {
+                padding: 1rem 0.9rem 2.2rem;
+            }
+
             .topbar {
                 flex-direction: column;
                 align-items: flex-start;
             }
 
-            .content-box {
-                padding: 1.5rem 1rem;
+            .stats-row,
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .info-card.wide {
+                grid-column: span 1;
+            }
+
+            .content-panel {
+                padding: 1rem;
             }
         }
     </style>
@@ -118,26 +320,114 @@
 <body>
     <div class="page">
         <div class="topbar">
-            <a href="index.html"><span>←</span> Back to Dashboard</a>
+            <div class="brand">
+                <span class="brand-mark"><i class="fa-solid fa-signal"></i></span>
+                Telecom Fault Tracker
+            </div>
+            <a class="back-btn" href="index.html"><span>←</span> Back to Dashboard</a>
         </div>
 
-        <div class="content-box">
-            <span class="section-tag">Project Overview</span>
-            <h1>12. Telecom Subscriber &amp; Fault Tracking</h1>
+        <main class="content-panel">
+            <div class="hero">
+                <span class="eyebrow">Project overview</span>
+                <h1>Telecom Subscriber &amp; Fault Tracking</h1>
+                <p class="subtitle">A telecom operations dashboard that combines database design, graph analysis, OOP, and predictive ML to trace faults and reduce churn risk effectively.</p>
+            </div>
 
-            <p><strong>Total Subjects Used:</strong> 5 major subjects</p>
-            <p><strong>Total Languages/Technologies Used:</strong> 6 main technologies</p>
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fa-solid fa-book-open"></i></div>
+                    <span class="label">Subjects used</span>
+                    <strong>05</strong>
+                    <small>Core academic areas</small>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fa-solid fa-code"></i></div>
+                    <span class="label">Technologies</span>
+                    <strong>06</strong>
+                    <small>Main stack tools</small>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fa-solid fa-chart-line"></i></div>
+                    <span class="label">Focus area</span>
+                    <strong>ML</strong>
+                    <small>Churn prediction</small>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fa-solid fa-network-wired"></i></div>
+                    <span class="label">System flow</span>
+                    <strong>Graph</strong>
+                    <small>Fault tracing</small>
+                </div>
+            </div>
 
-            <p><strong>Problem Statement:</strong> A telecom operator can't easily connect a customer complaint to the specific tower or fault causing it.</p>
+            <div class="content-grid">
+                <article class="info-card">
+                    <h2>Problem Statement</h2>
+                    <p>A telecom operator cannot easily connect a customer complaint to the exact tower or underlying fault causing service disruption. This creates slower resolution, poor customer retention, and weak network visibility.</p>
+                </article>
 
-            <p><strong>Subjects Mainly Used in This Project:</strong> DBMS, DMGT, ADSA, OOPJ, and Python. These subjects are directly used for database modeling, graph/network analysis, object-oriented programming, and churn prediction in telecom operations.</p>
+                <article class="info-card accent">
+                    <h2>Subjects Mainly Used</h2>
+                    <div class="tag-list">
+                        <span class="tag">DBMS</span>
+                        <span class="tag">DMGT</span>
+                        <span class="tag">ADSA</span>
+                        <span class="tag">OOPJ</span>
+                        <span class="tag">Python</span>
+                    </div>
+                </article>
 
-            <p><strong>Languages and Tools Mainly Used in This Project:</strong> Java, Python, SQL, HTML, CSS, and JavaScript. Java handles the backend logic and fault-tracing operations, Python is used for churn prediction, SQL manages the database, and HTML/CSS/JavaScript build the web interface.</p>
+                <article class="info-card">
+                    <h2>Languages &amp; Tools</h2>
+                    <div class="tag-list">
+                        <span class="tag">Java</span>
+                        <span class="tag">Python</span>
+                        <span class="tag">SQL</span>
+                        <span class="tag">HTML</span>
+                        <span class="tag">CSS</span>
+                        <span class="tag">JavaScript</span>
+                    </div>
+                </article>
 
-            <p><strong>Project Stack:</strong> Java backend services, SQL database, Python ML engine, web dashboard UI, graph-based topology analysis, and complaint-management flow for real telecom fault handling.</p>
+                <article class="info-card">
+                    <h2>Project Stack</h2>
+                    <p><strong>Java backend services</strong> handle the complaint workflow and graph-based fault tracing, while the <strong>SQL database</strong> stores towers, subscribers, and incidents. The <strong>Python ML engine</strong> predicts churn probability, and the <strong>web UI</strong> presents live operational insights.</p>
+                </article>
 
-            <p><strong>Processing (How it works):</strong> Java traces fault paths through the tower graph when a complaint comes in. Python reads usage and complaint history, predicts churn probability, and Java uses the results to flag at-risk subscribers for retention follow-up.</p>
-        </div>
+                <article class="info-card wide">
+                    <h2>Simple Example</h2>
+                    <p>If a customer reports repeated call drops near a specific area, the system checks which tower is connected to that region, finds the fault in the network graph, and highlights the affected route. At the same time, the program checks whether other customers connected to that tower are likely to leave the network.</p>
+                </article>
+
+                <article class="info-card wide">
+                    <h2>Why This Project Is Useful</h2>
+                    <p>This project helps telecom companies solve real-life network problems faster. Instead of treating every complaint separately, the system connects complaints, tower status, and subscriber behavior in one place. This makes fault tracking easier, speeds up support decisions, and helps reduce customer loss.</p>
+                </article>
+
+                <article class="info-card wide">
+                    <h2>How the Project Works</h2>
+                    <ol>
+                        <li><strong>Step 1: Complaint is received.</strong> A customer reports a problem such as call drops, poor signal, or broken connectivity.</li>
+                        <li><strong>Step 2: System finds the connected tower.</strong> The application checks which tower or tower network is serving that subscriber and location.</li>
+                        <li><strong>Step 3: Fault is traced using graph logic.</strong> Java uses the tower network graph to identify the related nodes and detect the likely broken or weak path.</li>
+                        <li><strong>Step 4: Data is stored and analyzed.</strong> Subscriber details, tower details, and complaint records are saved in the SQL database for real-time analysis.</li>
+                        <li><strong>Step 5: Churn prediction is done.</strong> Python reads customer behavior and usage patterns to estimate whether a subscriber may leave the network.</li>
+                        <li><strong>Step 6: Action is taken.</strong> The dashboard shows the issue, identifies risky subscribers, and helps the telecom team fix faults and plan retention actions.</li>
+                    </ol>
+                </article>
+
+                <article class="info-card wide">
+                    <h2>Processing Flow</h2>
+                    <ol>
+                        <li>When a complaint is logged, the Java system identifies the affected tower and traces the connected network path.</li>
+                        <li>Relevant subscriber and tower data are retrieved from the database for context and service analysis.</li>
+                        <li>Python reads historical usage and complaint patterns to estimate churn probability for at-risk subscribers.</li>
+                        <li>Java then prioritizes retention actions and fault-resolution steps using the combined graph and churn insights.</li>
+                    </ol>
+                </article>
+            </div>
+        </main>
     </div>
 </body>
 </html>

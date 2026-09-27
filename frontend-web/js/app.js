@@ -333,6 +333,28 @@ function toggleTowerFault(towerId) {
    ML CHURN PREDICTOR CALCULATION ENGINE
    ========================================================================== */
 
+function clampNumber(value, min, max, fallback) {
+    const num = Number.isFinite(Number(value)) ? Number(value) : fallback;
+    if (Number.isNaN(num)) return fallback;
+    return Math.min(Math.max(num, min), max);
+}
+
+function getPredictionInputs() {
+    const tenureEl = document.getElementById("inputTenure");
+    const callDropsEl = document.getElementById("inputCallDrops");
+    const feeEl = document.getElementById("inputFee");
+    const complaintsEl = document.getElementById("inputComplaints");
+    const faultyEl = document.getElementById("chkTowerFaulty");
+
+    const tenure = clampNumber(tenureEl ? tenureEl.value : 12, 1, 72, 12);
+    const callDrops = clampNumber(callDropsEl ? callDropsEl.value : 4, 0, 30, 4);
+    const fee = clampNumber(feeEl ? feeEl.value : 60, 20, 150, 60);
+    const complaints = clampNumber(complaintsEl ? complaintsEl.value : 1, 0, 10, 1);
+    const isFaulty = !!(faultyEl && faultyEl.checked);
+
+    return { tenure, callDrops, fee, complaints, isFaulty };
+}
+
 function calculateChurnProbability(tenure, callDrops, monthlyFee, complaintCount, isFaulty) {
     // Formula derived from trained Random Forest Model feature weights
     const logit = -1.5
@@ -347,11 +369,7 @@ function calculateChurnProbability(tenure, callDrops, monthlyFee, complaintCount
 }
 
 async function runAiPrediction() {
-    const tenure = parseInt(document.getElementById("inputTenure").value);
-    const callDrops = parseInt(document.getElementById("inputCallDrops").value);
-    const fee = parseFloat(document.getElementById("inputFee").value);
-    const complaints = parseInt(document.getElementById("inputComplaints").value);
-    const isFaulty = document.getElementById("chkTowerFaulty").checked;
+    const { tenure, callDrops, fee, complaints, isFaulty } = getPredictionInputs();
 
     const statusPill = document.getElementById("aiModelStatusPill");
     if (statusPill) {
@@ -373,13 +391,16 @@ async function runAiPrediction() {
                     isTowerFaulty: isFaulty
                 })
             });
+
             if (res.ok) {
-                resultData = await res.json();
+                const data = await res.json();
+                if (data && typeof data.churnProbability === "number") {
+                    resultData = data;
+                }
             }
         } catch (e) {}
     }
 
-    // Fallback or process API result
     if (!resultData) {
         const prob = calculateChurnProbability(tenure, callDrops, fee, complaints, isFaulty);
         let tier = "LOW";
@@ -400,43 +421,48 @@ async function runAiPrediction() {
         };
     }
 
-    // Update UI with AI prediction results
-    const pct = (resultData.churnProbability * 100).toFixed(1);
-    document.getElementById("gaugeProbVal").textContent = `${pct}%`;
-    document.getElementById("gaugeBarFill").style.width = `${pct}%`;
-
+    const pct = (Number(resultData.churnProbability) * 100).toFixed(1);
+    const gaugeVal = document.getElementById("gaugeProbVal");
+    const gaugeBar = document.getElementById("gaugeBarFill");
     const badge = document.getElementById("gaugeRiskBadge");
-    badge.className = `risk-badge ${resultData.riskTier}`;
-    badge.textContent = `${resultData.riskTier} RISK`;
-
     const confEl = document.getElementById("lblAiConfidence");
-    if (confEl) confEl.textContent = `${(resultData.aiConfidence * 100).toFixed(1)}% AI Confidence`;
+
+    if (gaugeVal) gaugeVal.textContent = `${pct}%`;
+    if (gaugeBar) gaugeBar.style.width = `${pct}%`;
+
+    if (badge) {
+        badge.className = `risk-badge ${resultData.riskTier || 'LOW'}`;
+        badge.textContent = `${resultData.riskTier || 'LOW'} RISK`;
+    }
+
+    if (confEl) {
+        const confidence = Number(resultData.aiConfidence || 0.945) * 100;
+        confEl.textContent = `${confidence.toFixed(1)}% AI Confidence`;
+    }
 
     if (statusPill) {
         statusPill.innerHTML = `<i class="fa-solid fa-circle-check" style="color:var(--success)"></i> AI Model Synced`;
     }
 
-    // Feature Importances
     const impCall = document.getElementById("barImpCallDrops");
     const impTower = document.getElementById("barImpTower");
     const impTenure = document.getElementById("barImpTenure");
 
     if (resultData.featureImportances) {
         const fi = resultData.featureImportances;
-        const callVal = (fi.call_drops || 0.1989) * 100;
-        const towerVal = (fi.is_tower_faulty || 0.2235) * 100;
-        const tenureVal = (fi.tenure_months || 0.3598) * 100;
+        const callVal = ((fi.call_drops || 0.1989) * 100).toFixed(1);
+        const towerVal = ((fi.is_tower_faulty || 0.2235) * 100).toFixed(1);
+        const tenureVal = ((fi.tenure_months || 0.3598) * 100).toFixed(1);
 
-        if (impCall) impCall.style.width = `${callVal.toFixed(1)}%`;
-        if (impTower) impTower.style.width = `${towerVal.toFixed(1)}%`;
-        if (impTenure) impTenure.style.width = `${tenureVal.toFixed(1)}%`;
+        if (impCall) impCall.style.width = `${callVal}%`;
+        if (impTower) impTower.style.width = `${towerVal}%`;
+        if (impTenure) impTenure.style.width = `${tenureVal}%`;
     } else {
         if (impCall) impCall.style.width = `${Math.min(callDrops * 3.3, 100)}%`;
         if (impTower) impTower.style.width = `${isFaulty ? 90 : 15}%`;
         if (impTenure) impTenure.style.width = `${Math.max(100 - tenure * 1.4, 10)}%`;
     }
 
-    // AI Recommendation
     const recTxt = document.getElementById("txtAiRecommendation");
     if (recTxt && resultData.aiRecommendations && resultData.aiRecommendations.length > 0) {
         recTxt.textContent = resultData.aiRecommendations[0];
@@ -444,15 +470,17 @@ async function runAiPrediction() {
 }
 
 function updateMLPredictorUI() {
-    const tenure = parseInt(document.getElementById("inputTenure").value);
-    const callDrops = parseInt(document.getElementById("inputCallDrops").value);
-    const fee = parseFloat(document.getElementById("inputFee").value);
-    const complaints = parseInt(document.getElementById("inputComplaints").value);
+    const { tenure, callDrops, fee, complaints } = getPredictionInputs();
 
-    document.getElementById("lblTenureVal").textContent = `${tenure} months`;
-    document.getElementById("lblCallDropsVal").textContent = `${callDrops} drops`;
-    document.getElementById("lblFeeVal").textContent = `$${fee.toFixed(2)}`;
-    document.getElementById("lblComplaintVal").textContent = `${complaints} complaint${complaints !== 1 ? 's' : ''}`;
+    const tenureEl = document.getElementById("lblTenureVal");
+    const callDropsEl = document.getElementById("lblCallDropsVal");
+    const feeEl = document.getElementById("lblFeeVal");
+    const complaintEl = document.getElementById("lblComplaintVal");
+
+    if (tenureEl) tenureEl.textContent = `${Math.round(tenure)} months`;
+    if (callDropsEl) callDropsEl.textContent = `${Math.round(callDrops)} drops`;
+    if (feeEl) feeEl.textContent = `$${Number(fee).toFixed(2)}`;
+    if (complaintEl) complaintEl.textContent = `${Math.round(complaints)} complaint${complaints !== 1 ? 's' : ''}`;
 
     runAiPrediction();
 }
