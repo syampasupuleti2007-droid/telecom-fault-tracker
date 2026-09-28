@@ -912,14 +912,21 @@ function setupEventListeners() {
     // Modal Events
     const modal = document.getElementById("complaintModal");
     const btnOpenModal = document.getElementById("btnOpenNewComplaintModal");
+    const btnOpenComplaintFromNav = document.getElementById("btnOpenComplaintFromNav");
     const btnCloseModal = document.getElementById("btnCloseModal");
     const btnCancelModal = document.getElementById("btnCancelModal");
 
+    const openComplaintModal = () => {
+        if (!modal) return;
+        populateModalDropdowns();
+        modal.classList.add("active");
+    };
+
     if (btnOpenModal) {
-        btnOpenModal.addEventListener("click", () => {
-            populateModalDropdowns();
-            modal.classList.add("active");
-        });
+        btnOpenModal.addEventListener("click", openComplaintModal);
+    }
+    if (btnOpenComplaintFromNav) {
+        btnOpenComplaintFromNav.addEventListener("click", openComplaintModal);
     }
 
     const closeModal = () => modal.classList.remove("active");

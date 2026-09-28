@@ -222,6 +222,60 @@
             gap: 1.25rem;
         }
 
+        .company-strip {
+            display: grid;
+            grid-template-columns: minmax(240px, 1.2fr) repeat(3, minmax(150px, 1fr));
+            gap: 1rem;
+            align-items: center;
+            background: linear-gradient(110deg, rgba(17, 24, 39, 0.94), rgba(8, 47, 73, 0.72));
+            border: 1px solid rgba(34, 211, 238, 0.22);
+            border-radius: 16px;
+            padding: 1.15rem 1.35rem;
+        }
+
+        .company-name {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .company-name i {
+            color: var(--accent-cyan);
+            font-size: 1.35rem;
+        }
+
+        .company-name strong {
+            display: block;
+            font-size: 1rem;
+        }
+
+        .company-name span,
+        .company-detail span {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            margin-top: 0.2rem;
+        }
+
+        .company-detail {
+            border-left: 1px solid var(--border-color);
+            padding-left: 1rem;
+        }
+
+        .company-detail strong {
+            font-size: 0.78rem;
+            color: var(--text-main);
+        }
+
+        @media (max-width: 900px) {
+            .company-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        @media (max-width: 560px) {
+            .company-strip { grid-template-columns: 1fr; }
+            .company-detail { border-left: 0; border-top: 1px solid var(--border-color); padding: 0.75rem 0 0; }
+        }
+
         .metric-card {
             background: var(--bg-card);
             backdrop-filter: blur(12px);
@@ -728,6 +782,9 @@
             <a href="register.html" class="btn" style="text-decoration: none; background: rgba(99, 102, 241, 0.18); border-color: rgba(99, 102, 241, 0.4);">
                 <i class="fa-solid fa-user-plus"></i> Register
             </a>
+            <button type="button" class="btn" id="btnOpenComplaintFromNav" style="background: rgba(239, 68, 68, 0.16); border-color: rgba(239, 68, 68, 0.4);">
+                <i class="fa-solid fa-triangle-exclamation"></i> Log Complaint
+            </button>
             <a href="subjects-used.html" class="btn" style="text-decoration: none; background: rgba(6, 182, 212, 0.12); border-color: rgba(6, 182, 212, 0.4);">
                 <i class="fa-solid fa-book-open"></i> Subjects Used
             </a>
@@ -752,6 +809,28 @@
 
     <!-- Main Content Container -->
     <div class="dashboard-container">
+
+        <section class="company-strip" aria-label="Network company details">
+            <div class="company-name">
+                <i class="fa-solid fa-building-shield"></i>
+                <div>
+                    <strong>Telecom Fault Tracker Communications</strong>
+                    <span>Network Operations Center dashboard</span>
+                </div>
+            </div>
+            <div class="company-detail">
+                <strong>Service Region</strong>
+                <span>North America network operations</span>
+            </div>
+            <div class="company-detail">
+                <strong>Support Desk</strong>
+                <span>24/7 fault response and subscriber care</span>
+            </div>
+            <div class="company-detail">
+                <strong>Contact</strong>
+                <span>noc@telecomfaulttracker.example</span>
+            </div>
+        </section>
 
         <!-- Metrics Row -->
         <div class="metrics-grid">
