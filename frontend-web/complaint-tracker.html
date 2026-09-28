@@ -70,6 +70,35 @@
             margin-bottom: 1.5rem;
         }
 
+        .search-card {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 0.9rem 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-card i { color: var(--accent-cyan); }
+
+        .search-input {
+            flex: 1;
+            min-width: 0;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 9px;
+            padding: 0.7rem 0.85rem;
+            color: var(--text-main);
+            font: inherit;
+            outline: none;
+        }
+
+        .search-input:focus { border-color: var(--accent-cyan); }
+
+        .search-hint { color: var(--text-muted); font-size: 0.78rem; }
+
         h1 {
             font-size: clamp(2.2rem, 4vw, 3.4rem);
             letter-spacing: -0.05em;
@@ -192,6 +221,12 @@
             <div class="subtitle">Monitor subscriber issues, severity, and current resolution status.</div>
         </div>
 
+        <div class="search-card">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input id="complaintSearchInput" class="search-input" type="search" placeholder="Search customer name, email, ID, complaint, category, or status" aria-label="Search complaints by customer">
+            <span class="search-hint">Customer-linked search</span>
+        </div>
+
         <div class="stats-grid">
             <div class="stat-box">
                 <div class="stat-label">Total Complaints</div>
@@ -232,6 +267,18 @@
     <script>
         const STORAGE_KEY = "telecom_complaints";
         const subscriberStorageKey = "telecom_subscribers";
+        const API_BASE_URL = "http://localhost:8080/api";
+        const defaultSubscribers = [
+            { subscriberId: 1, name: "Ava Morgan", email: "ava.morgan@telecom.example.com", phone: "+15550001001" },
+            { subscriberId: 2, name: "Noah Bennett", email: "noah.bennett@telecom.example.com", phone: "+15550001002" },
+            { subscriberId: 3, name: "Mia Patel", email: "mia.patel@telecom.example.com", phone: "+15550001003" },
+            { subscriberId: 5, name: "Sofia Kim", email: "sofia.kim@telecom.example.com", phone: "+15550001005" },
+            { subscriberId: 7, name: "Isabella Diaz", email: "isabella.diaz@telecom.example.com", phone: "+15550001007" },
+            { subscriberId: 9, name: "Emma Watson", email: "emma.watson@telecom.example.com", phone: "+15550001009" }
+        ];
+        const storedSubscribers = getStoredValue(subscriberStorageKey);
+        let trackerSubscribers = storedSubscribers.length ? storedSubscribers : defaultSubscribers;
+        let trackerComplaints = [];
 
         const defaultComplaints = [
             { complaintId: 1, subscriberId: 2, towerId: 3, category: "network_fault", description: "Repeated dropped calls near East Market tower.", severity: "high", status: "open", loggedAt: "2026-09-26 09:15:00" },
@@ -252,8 +299,7 @@
         }
 
         function getSubscriberById(id) {
-            const subscribers = getStoredValue(subscriberStorageKey);
-            return subscribers.find(s => Number(s.subscriberId) === Number(id)) || null;
+            return trackerSubscribers.find(s => Number(s.subscriberId) === Number(id)) || null;
         }
 
         function getTowerName(id) {
@@ -277,6 +323,7 @@
         function renderComplaintTracker() {
             const complaints = getStoredValue(STORAGE_KEY);
             const safeComplaints = complaints.length ? complaints : defaultComplaints;
+            trackerComplaints = safeComplaints;
 
             const total = safeComplaints.length;
             const open = safeComplaints.filter(c => c.status === "open").length;
@@ -296,7 +343,21 @@
                 return;
             }
 
-            tbody.innerHTML = safeComplaints.map(c => {
+            const query = String(document.getElementById("complaintSearchInput")?.value || "").trim().toLowerCase();
+            const filteredComplaints = safeComplaints.filter(c => {
+                const subscriber = getSubscriberById(c.subscriberId);
+                return [
+                    c.complaintId, c.subscriberId, c.description, c.category, c.severity, c.status,
+                    subscriber?.name, subscriber?.email, subscriber?.phone
+                ].some(value => String(value || "").toLowerCase().includes(query));
+            });
+
+            if (!filteredComplaints.length) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No complaints match this search.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filteredComplaints.map(c => {
                 const subscriber = getSubscriberById(c.subscriberId);
                 const severityClass = String(c.severity || "medium").toLowerCase();
                 const statusClass = String(c.status || "open").replace(/\s+/g, "_").toLowerCase();
@@ -316,7 +377,24 @@
             }).join("");
         }
 
-        document.addEventListener("DOMContentLoaded", renderComplaintTracker);
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("complaintSearchInput")?.addEventListener("input", renderComplaintTracker);
+            renderComplaintTracker();
+
+            Promise.all([
+                fetch(`${API_BASE_URL}/subscribers`).then(response => response.ok ? response.json() : null),
+                fetch(`${API_BASE_URL}/complaints`).then(response => response.ok ? response.json() : null)
+            ]).then(([subscribers, complaints]) => {
+                if (Array.isArray(subscribers) && subscribers.length) {
+                    trackerSubscribers = subscribers;
+                    localStorage.setItem(subscriberStorageKey, JSON.stringify(subscribers));
+                }
+                if (Array.isArray(complaints) && complaints.length) {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(complaints));
+                }
+                renderComplaintTracker();
+            }).catch(() => {});
+        });
         window.addEventListener("storage", renderComplaintTracker);
     </script>
 </body>

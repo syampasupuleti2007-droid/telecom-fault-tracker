@@ -13,6 +13,10 @@ import com.telecom.services.ComplaintService;
 
 import java.io.*;
 import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.*;
@@ -27,6 +31,7 @@ public class MainApplication {
 
     private static final Logger LOGGER = Logger.getLogger(MainApplication.class.getName());
     private static final int DEFAULT_PORT = 8080;
+    private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
     private final TowerNetworkGraph networkGraph = new TowerNetworkGraph();
     private final ComplaintService complaintService = new ComplaintService();
@@ -207,12 +212,13 @@ public class MainApplication {
             server.createContext("/api/complaints/resolve", new ResolveComplaintHandler());
             server.createContext("/api/graph/impact", new GraphImpactHandler());
             server.createContext("/api/predict/churn", new PredictChurnHandler());
+            server.createContext("/api/ai/answer", new AiAnswerHandler());
 
             server.setExecutor(java.util.concurrent.Executors.newCachedThreadPool());
             server.start();
 
             LOGGER.info("HTTP REST Server active at: http://localhost:" + port + "/");
-            LOGGER.info("API Endpoints: /api/status, /api/towers, /api/subscribers, /api/complaints, /api/predict/churn");
+            LOGGER.info("API Endpoints: /api/status, /api/towers, /api/subscribers, /api/complaints, /api/predict/churn, /api/ai/answer");
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Failed to start HTTP server on port " + port, e);
         }
@@ -421,12 +427,12 @@ public class MainApplication {
     private static String getJsonKeyValue(String json, String key) {
         if (json == null || key == null) return null;
         java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(
-            "\"" + java.util.regex.Pattern.quote(key) + "\"\\s*:\\s*(\"([^\"]*)\"|([^,\\}\\s]+))"
+            "\"" + java.util.regex.Pattern.quote(key) + "\"\\s*:\\s*(\"((?:\\\\.|[^\"\\\\])*)\"|([^,\\}\\s]+))"
         );
         java.util.regex.Matcher matcher = pattern.matcher(json);
         if (matcher.find()) {
             if (matcher.group(2) != null) {
-                return matcher.group(2);
+                return unescapeJson(matcher.group(2));
             } else if (matcher.group(3) != null) {
                 return matcher.group(3);
             }
@@ -540,6 +546,63 @@ public class MainApplication {
 
             sendResponse(exchange, 200, json.toString());
         }
+    }
+
+    private class AiAnswerHandler extends BaseHandler {
+        @Override
+        protected void handleRequest(HttpExchange exchange) throws Exception {
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "{\"error\":\"Method Not Allowed. Use POST.\"}");
+                return;
+            }
+
+            String apiKey = System.getenv("OPENAI_API_KEY");
+            if (apiKey == null || apiKey.isBlank()) {
+                sendResponse(exchange, 503, "{\"error\":\"OPENAI_API_KEY is not configured on the backend.\"}");
+                return;
+            }
+
+            String body = readRequestBody(exchange);
+            String question = parseStringParam(body, "question", "Explain this customer issue and recommend next steps.");
+            String context = parseStringParam(body, "context", "No customer context was supplied.");
+            String model = System.getenv().getOrDefault("OPENAI_MODEL", "gpt-4o-mini");
+            String baseUrl = System.getenv().getOrDefault("OPENAI_BASE_URL", "https://api.openai.com/v1");
+            String providerBody = "{\"model\":\"" + escapeJson(model) + "\",\"temperature\":0.2,\"messages\":["
+                + "{\"role\":\"system\",\"content\":\"You are a telecom support operations assistant. Give concise, evidence-based answers. Do not invent facts, and clearly label uncertainty.\"},"
+                + "{\"role\":\"user\",\"content\":\"Question: " + escapeJson(question) + "\\n\\nCustomer and network context:\\n" + escapeJson(context) + "\"}]}";
+
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(baseUrl.replaceAll("/$", "") + "/chat/completions"))
+                .header("Authorization", "Bearer " + apiKey)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(providerBody, StandardCharsets.UTF_8))
+                .build();
+            HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                LOGGER.warning("AI provider returned HTTP " + response.statusCode());
+                sendResponse(exchange, 502, "{\"error\":\"The AI provider could not answer the request.\"}");
+                return;
+            }
+
+            String answer = extractJsonString(response.body(), "content");
+            if (answer == null || answer.isBlank()) {
+                sendResponse(exchange, 502, "{\"error\":\"The AI provider returned an empty answer.\"}");
+                return;
+            }
+            sendResponse(exchange, 200, "{\"answer\":\"" + escapeJson(answer) + "\",\"model\":\"" + escapeJson(model) + "\"}");
+        }
+    }
+
+    private static String extractJsonString(String json, String key) {
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile(
+            "\\\"" + java.util.regex.Pattern.quote(key) + "\\\"\\s*:\\s*\\\"((?:\\\\.|[^\\\"\\\\])*)\\\""
+        ).matcher(json);
+        return matcher.find() ? unescapeJson(matcher.group(1)) : null;
+    }
+
+    private static String unescapeJson(String input) {
+        return input.replace("\\\\n", "\n").replace("\\\\r", "\r").replace("\\\\t", "\t")
+            .replace("\\\\\"", "\"").replace("\\\\\\", "\\");
     }
 
     private static String escapeJson(String input) {

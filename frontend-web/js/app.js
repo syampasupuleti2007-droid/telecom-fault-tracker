@@ -393,8 +393,55 @@ function calculateChurnProbability(tenure, callDrops, monthlyFee, complaintCount
     return Math.min(Math.max(prob, 0.01), 0.99);
 }
 
+function getRiskTier(probability) {
+    if (probability >= 0.80) return "CRITICAL";
+    if (probability >= 0.60) return "HIGH";
+    if (probability >= 0.35) return "MEDIUM";
+    return "LOW";
+}
+
+function getMitigationRecommendation({ tenure, callDrops, fee, complaints, isFaulty }, probability) {
+    const tier = getRiskTier(probability);
+    const actions = [];
+
+    if (isFaulty) {
+        actions.push("Restore service by rerouting to an operational tower and investigate the outage");
+    }
+    if (callDrops >= 8) {
+        actions.push(callDrops >= 16
+            ? "Prioritize radio-quality and handover diagnostics for the frequent call drops"
+            : "Review call-drop logs and check signal quality along the subscriber's usual route");
+    }
+    if (complaints >= 2) {
+        actions.push(complaints >= 5
+            ? "Escalate the repeated complaints into one priority case, assign an owner, and contact the subscriber"
+            : "Review the complaint history, assign a case owner, and send the subscriber a progress update");
+    }
+    if (tenure <= 6 && tier !== "LOW") {
+        actions.push("Check the new subscriber's setup and early service experience, then schedule a follow-up");
+    }
+    if (tenure >= 48 && tier !== "LOW") {
+        actions.push("Offer a proactive service review and retention check-in for this long-standing account");
+    }
+    if (fee >= 100 && tier !== "LOW") {
+        actions.push("Review plan value and explain available options that better match the subscriber's usage");
+    }
+    if (actions.length === 0 && (tier === "HIGH" || tier === "CRITICAL")) {
+        actions.push("Contact the subscriber promptly, review recent service events, and schedule a follow-up");
+    } else if (actions.length === 0 && tier === "MEDIUM") {
+        actions.push("Schedule a proactive service check and monitor for new complaints or signal problems");
+    } else if (actions.length === 0) {
+        actions.push("Continue routine monitoring and reassess if service conditions change");
+    }
+
+    return actions.slice(0, 3).join(". ") + ".";
+}
+
+let predictionRequestId = 0;
+
 async function runAiPrediction() {
     const { tenure, callDrops, fee, complaints, isFaulty } = getPredictionInputs();
+    const requestId = ++predictionRequestId;
 
     const statusPill = document.getElementById("aiModelStatusPill");
     if (statusPill) {
@@ -428,25 +475,26 @@ async function runAiPrediction() {
 
     if (!resultData) {
         const prob = calculateChurnProbability(tenure, callDrops, fee, complaints, isFaulty);
-        let tier = "LOW";
-        if (prob >= 0.80) tier = "CRITICAL";
-        else if (prob >= 0.60) tier = "HIGH";
-        else if (prob >= 0.35) tier = "MEDIUM";
-
-        const rec = isFaulty
-            ? "Reroute subscriber connection to nearest operational cell tower 'North Ridge' to reduce churn risk by 42%."
-            : (prob >= 0.60 ? "Issue proactive $15 Service Guarantee account credit and trigger loyalty team check-in." : "Standard network monitoring active. No customer intervention required.");
+        const tier = getRiskTier(prob);
 
         resultData = {
             churnProbability: prob,
             riskTier: tier,
             aiConfidence: 0.945,
             featureImportances: { call_drops: 0.352, is_tower_faulty: 0.284, tenure_months: 0.186 },
-            aiRecommendations: [rec]
+            aiRecommendations: []
         };
     }
 
-    const pct = (Number(resultData.churnProbability) * 100).toFixed(1);
+    if (requestId !== predictionRequestId) return;
+
+    const rawProbability = Number(resultData.churnProbability);
+    const probability = Number.isFinite(rawProbability) ? Math.min(Math.max(rawProbability, 0), 1) : calculateChurnProbability(tenure, callDrops, fee, complaints, isFaulty);
+    const tier = ["LOW", "MEDIUM", "HIGH", "CRITICAL"].includes(String(resultData.riskTier).toUpperCase())
+        ? String(resultData.riskTier).toUpperCase()
+        : getRiskTier(probability);
+    const recommendation = getMitigationRecommendation({ tenure, callDrops, fee, complaints, isFaulty }, probability);
+    const pct = (probability * 100).toFixed(1);
     const gaugeVal = document.getElementById("gaugeProbVal");
     const gaugeBar = document.getElementById("gaugeBarFill");
     const badge = document.getElementById("gaugeRiskBadge");
@@ -456,8 +504,8 @@ async function runAiPrediction() {
     if (gaugeBar) gaugeBar.style.width = `${pct}%`;
 
     if (badge) {
-        badge.className = `risk-badge ${resultData.riskTier || 'LOW'}`;
-        badge.textContent = `${resultData.riskTier || 'LOW'} RISK`;
+        badge.className = `risk-badge ${tier}`;
+        badge.textContent = `${tier} RISK`;
     }
 
     if (confEl) {
@@ -489,9 +537,7 @@ async function runAiPrediction() {
     }
 
     const recTxt = document.getElementById("txtAiRecommendation");
-    if (recTxt && resultData.aiRecommendations && resultData.aiRecommendations.length > 0) {
-        recTxt.textContent = resultData.aiRecommendations[0];
-    }
+    if (recTxt) recTxt.textContent = recommendation;
 }
 
 function updateMLPredictorUI() {
@@ -516,6 +562,155 @@ function updateMLFormForTower(tower) {
         chk.checked = tower.isFaulty;
         updateMLPredictorUI();
     }
+}
+
+function normalizeSearchValue(value) {
+    return String(value || "").trim().toLowerCase();
+}
+
+function escapeCustomerText(value) {
+    return String(value || "").replace(/[<>&"']/g, character => ({
+        "<": "&lt;",
+        ">": "&gt;",
+        "&": "&amp;",
+        "\"": "&quot;",
+        "'": "&#39;"
+    }[character]));
+}
+
+function renderCustomerSearchOptions() {
+    const options = document.getElementById("customerSearchOptions");
+    if (!options) return;
+
+    options.innerHTML = state.subscribers.map(subscriber =>
+        `<option value="${subscriber.name}">${subscriber.email} | ID ${subscriber.subscriberId}</option>`
+    ).join("");
+}
+
+function findCustomer(searchValue) {
+    const query = normalizeSearchValue(searchValue);
+    if (!query) return null;
+
+    return state.subscribers.find(subscriber => [
+        subscriber.name,
+        subscriber.email,
+        subscriber.phone,
+        subscriber.subscriberId
+    ].some(value => normalizeSearchValue(value) === query)) || state.subscribers.find(subscriber => [
+        subscriber.name,
+        subscriber.email,
+        subscriber.phone,
+        subscriber.subscriberId
+    ].some(value => normalizeSearchValue(value).includes(query)));
+}
+
+function showCustomerAiAnswer(searchValue) {
+    const answerBox = document.getElementById("customerAiAnswer");
+    if (!answerBox) return;
+
+    const customer = findCustomer(searchValue);
+    if (!customer) {
+        answerBox.innerHTML = `
+            <h3><i class="fa-solid fa-circle-question" style="color: var(--warning);"></i> Customer not found</h3>
+            <p>No subscriber matches "${escapeCustomerText(searchValue)}". Try a name, email, phone number, or customer ID.</p>
+        `;
+        return;
+    }
+
+    const tower = state.towers.find(item => Number(item.towerId) === Number(customer.connectedTowerId));
+    const complaints = state.complaints.filter(complaint => Number(complaint.subscriberId) === Number(customer.subscriberId));
+    const activeComplaints = complaints.filter(complaint => complaint.status !== "resolved");
+    const probability = calculateChurnProbability(
+        customer.tenureMonths,
+        customer.callDrops,
+        59.99,
+        complaints.length,
+        Boolean(tower && tower.isFaulty)
+    );
+    const riskTier = getRiskTier(probability);
+    const complaintSummary = activeComplaints.length > 0
+        ? activeComplaints.map(complaint => `${complaint.category.replaceAll("_", " ")} (${complaint.severity})`).join(", ")
+        : "no active complaints";
+    const highestSeverity = activeComplaints.some(complaint => complaint.severity === "critical")
+        ? "CRITICAL"
+        : activeComplaints.some(complaint => complaint.severity === "high") ? "HIGH" : "STANDARD";
+    const priority = tower && tower.isFaulty || highestSeverity === "CRITICAL" || riskTier === "CRITICAL"
+        ? "Immediate"
+        : highestSeverity === "HIGH" || riskTier === "HIGH" ? "High" : "Normal";
+    const issueDetails = activeComplaints.length > 0
+        ? activeComplaints.map(complaint => escapeCustomerText(complaint.description)).join(" ")
+        : "No unresolved problem description is available.";
+    const likelyCause = tower && tower.isFaulty
+        ? `Likely network fault at ${escapeCustomerText(tower.towerName)}.`
+        : customer.callDrops >= 8
+            ? "Likely radio-quality or handover instability along the customer's usual route."
+            : activeComplaints.some(complaint => complaint.category === "billing")
+                ? "Likely account or billing-record discrepancy; payment details need verification."
+                : "No single root cause is confirmed from the available records; agent review is required.";
+    const suggestions = [];
+    if (tower && tower.isFaulty) {
+        suggestions.push(`Create or link a network incident for ${escapeCustomerText(tower.towerName)} and check whether nearby customers are affected.`);
+        suggestions.push("Offer a temporary reroute to an operational tower and confirm service recovery with the customer.");
+    }
+    if (customer.callDrops >= 8) {
+        suggestions.push("Run radio-quality, signal-strength, and handover diagnostics for the reported location and time.");
+    }
+    if (activeComplaints.some(complaint => complaint.category === "billing")) {
+        suggestions.push("Verify the usage record, explain the charge in plain language, and apply an adjustment when the review confirms an error.");
+    }
+    if (activeComplaints.length > 1) {
+        suggestions.push("Consolidate repeated complaints under one owner so the customer receives one consistent update.");
+    }
+    if (suggestions.length === 0) {
+        suggestions.push("Keep the account under routine monitoring and contact the customer if the issue returns.");
+    }
+    let resolutionPlan;
+    if (tower && tower.isFaulty) {
+        resolutionPlan = `Open a network incident for ${escapeCustomerText(tower.towerName)}, reroute the customer to the nearest operational tower, and send an update when service is restored.`;
+    } else if (customer.callDrops >= 8) {
+        resolutionPlan = "Run radio-quality and handover diagnostics for the customer's route, then follow up after the call-drop rate is checked.";
+    } else if (activeComplaints.some(complaint => complaint.category === "billing")) {
+        resolutionPlan = "Assign the billing case to an agent, verify the disputed charge, and send the customer a written explanation or adjustment.";
+    } else if (activeComplaints.length > 0) {
+        resolutionPlan = "Assign an owner, review the complaint details, and contact the customer with a progress update before closing the case.";
+    } else {
+        resolutionPlan = "No immediate intervention is required; continue monitoring and contact the customer if a new complaint appears.";
+    }
+    const recommendation = getMitigationRecommendation({
+        tenure: Number(customer.tenureMonths) || 0,
+        callDrops: Number(customer.callDrops) || 0,
+        fee: 59.99,
+        complaints: complaints.length,
+        isFaulty: Boolean(tower && tower.isFaulty)
+    }, probability);
+
+    answerBox.innerHTML = `
+        <h3><i class="fa-solid fa-user-check" style="color: var(--success);"></i> ${escapeCustomerText(customer.name)}</h3>
+        <div class="customer-ai-section" style="margin-top: 0.2rem; padding-top: 0; border-top: 0;">
+            <strong>AI diagnosis</strong>
+            <p>${activeComplaints.length > 0 ? issueDetails : "There are no unresolved complaints for this customer."}</p>
+            <p style="margin-top: 0.35rem;"><strong>Likely cause</strong>${likelyCause}</p>
+        </div>
+        <div class="customer-ai-section">
+            <strong>Professional recommendations</strong>
+            <ol class="customer-ai-suggestions">${suggestions.map(suggestion => `<li>${suggestion}</li>`).join("")}</ol>
+        </div>
+        <div class="customer-ai-section">
+            <strong>Recommended resolution</strong>
+            <p>${resolutionPlan} ${recommendation}</p>
+        </div>
+        <div class="customer-ai-section">
+            <strong>Customer-ready response</strong>
+            <p>Hello ${escapeCustomerText(customer.name)}, we are sorry for the inconvenience. We have reviewed your complaint and marked it as ${priority.toLowerCase()} priority. Our support team is investigating the issue and will share the next update after the recommended checks are complete.</p>
+        </div>
+        <div class="customer-ai-facts">
+            <span class="customer-ai-fact">${complaints.length} total complaint${complaints.length === 1 ? "" : "s"}</span>
+            <span class="customer-ai-fact">${activeComplaints.length} active</span>
+            <span class="customer-ai-fact">${customer.callDrops} call drops</span>
+            <span class="customer-ai-fact">${priority} priority</span>
+            <span class="customer-ai-fact">${riskTier} churn risk (${(probability * 100).toFixed(1)}%)</span>
+        </div>
+    `;
 }
 
 /* ==========================================================================
@@ -638,6 +833,7 @@ function renderAll() {
     renderMetrics();
     renderComplaintsTable();
     renderRiskSubscribersTable();
+    renderCustomerSearchOptions();
     updateMLPredictorUI();
     updateBackendStatusBadge(state.backendConnected);
 }
@@ -647,6 +843,14 @@ function renderAll() {
    ========================================================================== */
 
 function setupEventListeners() {
+    const customerSearchForm = document.getElementById("customerSearchForm");
+    if (customerSearchForm) {
+        customerSearchForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+            showCustomerAiAnswer(document.getElementById("customerSearchInput").value);
+        });
+    }
+
     // ML Slider Events
     ["inputTenure", "inputCallDrops", "inputFee", "inputComplaints", "chkTowerFaulty"].forEach(id => {
         const el = document.getElementById(id);

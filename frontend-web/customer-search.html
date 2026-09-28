@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Support AI | Telecom Fault Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg: #08111f;
+            --panel: rgba(17, 28, 46, 0.88);
+            --panel-soft: rgba(27, 43, 67, 0.7);
+            --border: rgba(148, 163, 184, 0.16);
+            --text: #eef5ff;
+            --muted: #9badc5;
+            --cyan: #22d3ee;
+            --blue: #60a5fa;
+            --green: #34d399;
+            --amber: #fbbf24;
+            --red: #fb7185;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            color: var(--text);
+            font-family: "DM Sans", sans-serif;
+            background: radial-gradient(circle at 10% 0%, rgba(34, 211, 238, 0.15), transparent 34%),
+                radial-gradient(circle at 100% 100%, rgba(96, 165, 250, 0.12), transparent 38%), var(--bg);
+        }
+        .page { width: min(1180px, calc(100% - 2rem)); margin: 0 auto; padding: 1.4rem 0 3rem; }
+        .topbar, .search-row, .result-header, .facts { display: flex; align-items: center; }
+        .topbar { justify-content: space-between; gap: 1rem; margin-bottom: 4rem; }
+        .brand { color: var(--text); text-decoration: none; font-weight: 700; display: flex; align-items: center; gap: 0.65rem; }
+        .brand i { color: var(--cyan); font-size: 1.2rem; }
+        .back-link { color: var(--muted); text-decoration: none; font-size: 0.86rem; }
+        .back-link:hover { color: var(--cyan); }
+        .hero { max-width: 760px; margin-bottom: 1.5rem; }
+        .eyebrow { color: var(--cyan); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; }
+        h1 { margin: 0.55rem 0 0.7rem; font-size: clamp(2.1rem, 5vw, 4.2rem); line-height: 1.02; letter-spacing: -0.04em; }
+        .hero p { color: var(--muted); font-size: 1.02rem; line-height: 1.6; margin: 0; }
+        .search-card, .result-card { background: var(--panel); border: 1px solid var(--border); border-radius: 18px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22); }
+        .search-card { padding: 1rem; margin-bottom: 1.25rem; }
+        .search-row { gap: 0.7rem; }
+        .search-input { flex: 1; min-width: 0; padding: 0.95rem 1rem; color: var(--text); background: var(--panel-soft); border: 1px solid var(--border); border-radius: 10px; outline: none; font: inherit; }
+        .search-input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.12); }
+        .search-button { border: 0; border-radius: 10px; padding: 0.95rem 1.2rem; color: #04111c; background: var(--cyan); font: 700 0.9rem "DM Sans", sans-serif; cursor: pointer; }
+        .search-button:hover { background: #67e8f9; }
+        .hint { color: var(--muted); font-size: 0.78rem; margin: 0.7rem 0.15rem 0; }
+        .ai-source { color: var(--cyan); font-size: 0.75rem; margin-top: 1rem; }
+        .result-card { padding: 1.4rem; min-height: 300px; }
+        .result-header { justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+        .result-header h2 { font-size: 1.25rem; margin: 0; }
+        .result-header p { color: var(--muted); margin: 0.3rem 0 0; font-size: 0.85rem; }
+        .priority { border-radius: 999px; padding: 0.35rem 0.7rem; color: #111827; font-size: 0.72rem; font-weight: 700; white-space: nowrap; }
+        .priority.immediate { background: var(--red); }
+        .priority.high { background: var(--amber); }
+        .priority.normal { background: var(--green); }
+        .empty { display: grid; place-items: center; min-height: 230px; color: var(--muted); text-align: center; }
+        .empty i { color: var(--cyan); font-size: 2rem; margin-bottom: 0.8rem; }
+        .answer-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 1rem; margin-top: 1.15rem; }
+        .answer-section { background: var(--panel-soft); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; }
+        .answer-section h3 { color: var(--cyan); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 0.55rem; }
+        .answer-section p, .answer-section li { color: var(--muted); font-size: 0.9rem; line-height: 1.55; }
+        .answer-section p { margin: 0; }
+        .answer-section ul { margin: 0; padding-left: 1.1rem; }
+        .answer-section li + li { margin-top: 0.35rem; }
+        .facts { flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+        .fact { padding: 0.4rem 0.6rem; color: var(--muted); border: 1px solid var(--border); border-radius: 7px; font: 0.72rem "JetBrains Mono", monospace; }
+        @media (max-width: 700px) {
+            .topbar { margin-bottom: 2.5rem; }
+            .search-row, .result-header { align-items: stretch; flex-direction: column; }
+            .search-button { width: 100%; }
+            .answer-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <nav class="topbar">
+            <a class="brand" href="index.html"><i class="fa-solid fa-tower-cell"></i> Telecom Fault Tracker</a>
+            <a class="back-link" href="index.html"><i class="fa-solid fa-arrow-left"></i> Back to dashboard</a>
+        </nav>
+
+        <section class="hero">
+            <div class="eyebrow">Support intelligence desk</div>
+            <h1>Find the right solution for every customer.</h1>
+            <p>Search a subscriber and get a clear, evidence-based support recommendation from complaint history, tower health, call drops, and churn risk.</p>
+        </section>
+
+        <section class="search-card">
+            <form id="customerSearchForm" class="search-row">
+                <input id="customerSearchInput" class="search-input" list="customerSearchOptions" type="search" autocomplete="off" placeholder="Search by name, email, phone, or customer ID" aria-label="Search customer">
+                <datalist id="customerSearchOptions"></datalist>
+                <button class="search-button" type="submit"><i class="fa-solid fa-magnifying-glass"></i> Find solution</button>
+            </form>
+            <p class="hint">Try a demo customer such as Mia Patel, Noah Bennett, or customer ID 9.</p>
+        </section>
+
+        <section id="customerResult" class="result-card" aria-live="polite">
+            <div class="empty"><div><i class="fa-solid fa-headset"></i><p>Search for a customer to generate a professional diagnosis and solution.</p></div></div>
+        </section>
+    </main>
+
+    <script>
+        const API_BASE_URL = "http://localhost:8080/api";
+        const defaultSubscribers = [
+            { subscriberId: 1, name: "Ava Morgan", email: "ava.morgan@telecom.example.com", phone: "+15550001001", connectedTowerId: 1, tenureMonths: 34, callDrops: 2 },
+            { subscriberId: 2, name: "Noah Bennett", email: "noah.bennett@telecom.example.com", phone: "+15550001002", connectedTowerId: 2, tenureMonths: 8, callDrops: 17 },
+            { subscriberId: 3, name: "Mia Patel", email: "mia.patel@telecom.example.com", phone: "+15550001003", connectedTowerId: 3, tenureMonths: 19, callDrops: 14 },
+            { subscriberId: 5, name: "Sofia Kim", email: "sofia.kim@telecom.example.com", phone: "+15550001005", connectedTowerId: 5, tenureMonths: 5, callDrops: 21 },
+            { subscriberId: 9, name: "Emma Watson", email: "emma.watson@telecom.example.com", phone: "+15550001009", connectedTowerId: 7, tenureMonths: 3, callDrops: 28 }
+        ];
+        const defaultTowers = [
+            { towerId: 1, towerName: "Central Exchange", isFaulty: false },
+            { towerId: 2, towerName: "North Ridge", isFaulty: false },
+            { towerId: 3, towerName: "East Market", isFaulty: true },
+            { towerId: 5, towerName: "West Park", isFaulty: false },
+            { towerId: 7, towerName: "Metro Station", isFaulty: true }
+        ];
+        const defaultComplaints = [
+            { complaintId: 1, subscriberId: 2, towerId: 3, category: "network_fault", description: "Repeated dropped calls near East Market tower.", severity: "high", status: "open" },
+            { complaintId: 2, subscriberId: 3, towerId: 3, category: "network_fault", description: "Intermittent service and slow data around East Market.", severity: "critical", status: "in_progress" },
+            { complaintId: 3, subscriberId: 5, towerId: 3, category: "call_drops", description: "Calls disconnect several times each day.", severity: "high", status: "open" },
+            { complaintId: 6, subscriberId: 9, towerId: 7, category: "network_fault", description: "Complete outage in Metro Station area.", severity: "critical", status: "open" }
+        ];
+        const data = { subscribers: readStorage("telecom_subscribers", defaultSubscribers), complaints: readStorage("telecom_complaints", defaultComplaints), towers: defaultTowers };
+
+        function readStorage(key, fallback) {
+            try { const value = JSON.parse(localStorage.getItem(key)); return Array.isArray(value) && value.length ? value : fallback; } catch { return fallback; }
+        }
+        function text(value) { return String(value || "").replace(/[<>&"']/g, character => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "\"": "&quot;", "'": "&#39;" }[character])); }
+        function searchValue(value) { return String(value || "").trim().toLowerCase(); }
+        function probability(customer, complaintCount, faulty) {
+            const logit = -1.5 - (0.05 * Number(customer.tenureMonths || 0)) + (0.35 * Number(customer.callDrops || 0)) + (1.8 * (faulty ? 1 : 0)) + (0.45 * complaintCount);
+            return Math.min(Math.max(1 / (1 + Math.exp(-logit)), 0.01), 0.99);
+        }
+        function findCustomer(query) {
+            const normalized = searchValue(query);
+            return data.subscribers.find(customer => [customer.name, customer.email, customer.phone, customer.subscriberId].some(value => searchValue(value) === normalized)) || data.subscribers.find(customer => [customer.name, customer.email, customer.phone, customer.subscriberId].some(value => searchValue(value).includes(normalized)));
+        }
+        function displayOptions() {
+            document.getElementById("customerSearchOptions").innerHTML = data.subscribers.map(customer => `<option value="${text(customer.name)}">${text(customer.email)} | ID ${text(customer.subscriberId)}</option>`).join("");
+        }
+        function showMessage(title, message, icon, color) {
+            document.getElementById("customerResult").innerHTML = `<div class="empty"><div><i class="fa-solid ${icon}" style="color:${color};"></i><p>${message}</p></div></div>`;
+        }
+        function customerContext(customer, tower, complaints, active, risk, riskTier, priority) {
+            return JSON.stringify({
+                customer: { id: customer.subscriberId, name: customer.name, tenureMonths: customer.tenureMonths, callDrops: customer.callDrops },
+                tower: tower ? { name: tower.towerName, faulty: Boolean(tower.isFaulty) } : null,
+                complaints: complaints.map(item => ({ category: item.category, description: item.description, severity: item.severity, status: item.status })),
+                activeComplaintCount: active.length,
+                churnRisk: `${riskTier} (${(risk * 100).toFixed(1)}%)`,
+                priority
+            });
+        }
+        async function requestAiAnswer(customer, tower, complaints, active, risk, riskTier, priority) {
+            const result = document.getElementById("customerResult");
+            const context = customerContext(customer, tower, complaints, active, risk, riskTier, priority);
+            try {
+                const response = await fetch(`${API_BASE_URL}/ai/answer`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        question: "Diagnose this customer's issue, recommend the safest operational next steps, and draft a short customer-ready response.",
+                        context
+                    })
+                });
+                if (!response.ok) return;
+                const payload = await response.json();
+                if (payload.answer && result) {
+                    const section = document.createElement("article");
+                    section.className = "answer-section";
+                    section.innerHTML = `<h3>Live AI answer</h3><p>${text(payload.answer).replace(/\n/g, "<br>")}</p>`;
+                    result.querySelector(".answer-grid")?.prepend(section);
+                    const source = document.createElement("p");
+                    source.className = "ai-source";
+                    source.textContent = `Generated by ${payload.model || "configured AI model"} through the secure backend.`;
+                    result.appendChild(source);
+                }
+            } catch (error) {
+                // The local evidence-based answer remains available when AI is offline.
+            }
+        }
+        function showCustomer(query) {
+            const customer = findCustomer(query);
+            if (!customer) { showMessage("Customer not found", `No customer matches "${text(query)}". Try a name, email, phone, or ID.`, "fa-circle-question", "var(--amber)"); return; }
+            const tower = data.towers.find(item => Number(item.towerId) === Number(customer.connectedTowerId));
+            const complaints = data.complaints.filter(item => Number(item.subscriberId) === Number(customer.subscriberId));
+            const active = complaints.filter(item => item.status !== "resolved");
+            const risk = probability(customer, complaints.length, Boolean(tower && tower.isFaulty));
+            const riskTier = risk >= 0.8 ? "CRITICAL" : risk >= 0.6 ? "HIGH" : risk >= 0.35 ? "MEDIUM" : "LOW";
+            const critical = active.some(item => item.severity === "critical");
+            const high = active.some(item => item.severity === "high");
+            const priority = tower && tower.isFaulty || critical || riskTier === "CRITICAL" ? "Immediate" : high || riskTier === "HIGH" ? "High" : "Normal";
+            const suggestions = [];
+            if (tower && tower.isFaulty) suggestions.push(`Open a network incident for ${text(tower.towerName)} and check nearby customers for the same fault.`);
+            if (Number(customer.callDrops) >= 8) suggestions.push("Run signal-strength, radio-quality, and handover diagnostics for the customer's usual route.");
+            if (active.some(item => item.category === "billing")) suggestions.push("Verify the usage record and explain or adjust the disputed charge after review.");
+            if (active.length > 1) suggestions.push("Consolidate repeated complaints under one owner and send one consistent progress update.");
+            if (!suggestions.length) suggestions.push("Continue routine monitoring and contact the customer if a new issue is reported.");
+            const cause = tower && tower.isFaulty ? `Network fault at ${text(tower.towerName)}` : Number(customer.callDrops) >= 8 ? "Radio-quality or handover instability" : "No confirmed root cause yet; agent review required";
+            const solution = tower && tower.isFaulty ? `Reroute the customer to an operational tower, verify service recovery, and update the customer after the incident is investigated.` : Number(customer.callDrops) >= 8 ? "Complete radio and handover diagnostics, then follow up after the call-drop rate is checked." : active.length ? "Assign an owner, review the complaint, and contact the customer with the next update before closing the case." : "No immediate intervention is required; maintain routine monitoring.";
+            document.getElementById("customerResult").innerHTML = `
+                <div class="result-header"><div><h2><i class="fa-solid fa-user-check" style="color:var(--green);"></i> ${text(customer.name)}</h2><p>${text(customer.email)} | Customer ID ${text(customer.subscriberId)}</p></div><span class="priority ${priority.toLowerCase()}">${priority} priority</span></div>
+                <div class="answer-grid">
+                    <article class="answer-section"><h3>AI diagnosis</h3><p>${active.length ? active.map(item => text(item.description)).join(" ") : "There are no unresolved complaints for this customer."}</p><p style="margin-top:.6rem;"><strong>Likely cause</strong>${cause}</p></article>
+                    <article class="answer-section"><h3>Recommended solution</h3><p>${solution}</p></article>
+                    <article class="answer-section"><h3>Professional suggestions</h3><ul>${suggestions.map(item => `<li>${item}</li>`).join("")}</ul></article>
+                    <article class="answer-section"><h3>Customer-ready response</h3><p>Hello ${text(customer.name)}, we are sorry for the inconvenience. We have reviewed your complaint and marked it as ${priority.toLowerCase()} priority. Our support team is investigating the issue and will share the next update after the recommended checks are complete.</p></article>
+                </div>
+                <div class="facts"><span class="fact">${complaints.length} complaints</span><span class="fact">${active.length} active</span><span class="fact">${text(customer.callDrops)} call drops</span><span class="fact">${riskTier} churn risk ${(risk * 100).toFixed(1)}%</span></div>`;
+            requestAiAnswer(customer, tower, complaints, active, risk, riskTier, priority);
+        }
+        document.getElementById("customerSearchForm").addEventListener("submit", event => { event.preventDefault(); showCustomer(document.getElementById("customerSearchInput").value); });
+        displayOptions();
+        fetch(`${API_BASE_URL}/subscribers`).then(response => response.ok ? response.json() : null).then(subscribers => { if (Array.isArray(subscribers) && subscribers.length) { data.subscribers = subscribers; displayOptions(); } }).catch(() => {});
+        fetch(`${API_BASE_URL}/complaints`).then(response => response.ok ? response.json() : null).then(complaints => { if (Array.isArray(complaints) && complaints.length) data.complaints = complaints; }).catch(() => {});
+    </script>
+</body>
+</html>
