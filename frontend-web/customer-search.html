@@ -141,10 +141,21 @@
         }
         function findCustomer(query) {
             const normalized = searchValue(query);
-            return data.subscribers.find(customer => [customer.name, customer.email, customer.phone, customer.subscriberId].some(value => searchValue(value) === normalized)) || data.subscribers.find(customer => [customer.name, customer.email, customer.phone, customer.subscriberId].some(value => searchValue(value).includes(normalized)));
+            const complaintMatch = normalized.match(/^(complaint(?:\s+id)?\s*#?|#)\s*(\d+)$/);
+            const complaintId = complaintMatch ? complaintMatch[2] : null;
+            const complaint = complaintId ? data.complaints.find(item => searchValue(item.complaintId) === complaintId) : null;
+            const complaintCustomer = complaint
+                ? data.subscribers.find(customer => Number(customer.subscriberId) === Number(complaint.subscriberId))
+                : null;
+            return complaintCustomer || data.subscribers.find(customer => [customer.name, customer.email, customer.phone, customer.subscriberId].some(value => searchValue(value) === normalized)) || data.subscribers.find(customer => [customer.name, customer.email, customer.phone, customer.subscriberId].some(value => searchValue(value).includes(normalized)));
         }
         function displayOptions() {
-            document.getElementById("customerSearchOptions").innerHTML = data.subscribers.map(customer => `<option value="${text(customer.name)}">${text(customer.email)} | ID ${text(customer.subscriberId)}</option>`).join("");
+            const customerOptions = data.subscribers.map(customer => `<option value="${text(customer.name)}">${text(customer.email)} | ID ${text(customer.subscriberId)}</option>`);
+            const complaintOptions = data.complaints.map(complaint => {
+                const customer = data.subscribers.find(item => Number(item.subscriberId) === Number(complaint.subscriberId));
+                return `<option value="Complaint #${text(complaint.complaintId)}">${customer ? text(customer.name) : `Subscriber #${text(complaint.subscriberId)}`} | ${text(complaint.status)}</option>`;
+            });
+            document.getElementById("customerSearchOptions").innerHTML = customerOptions.concat(complaintOptions).join("");
         }
         function showMessage(title, message, icon, color) {
             document.getElementById("customerResult").innerHTML = `<div class="empty"><div><i class="fa-solid ${icon}" style="color:${color};"></i><p>${message}</p></div></div>`;
@@ -220,7 +231,7 @@
         document.getElementById("customerSearchForm").addEventListener("submit", event => { event.preventDefault(); showCustomer(document.getElementById("customerSearchInput").value); });
         displayOptions();
         fetch(`${API_BASE_URL}/subscribers`).then(response => response.ok ? response.json() : null).then(subscribers => { if (Array.isArray(subscribers) && subscribers.length) { data.subscribers = subscribers; displayOptions(); } }).catch(() => {});
-        fetch(`${API_BASE_URL}/complaints`).then(response => response.ok ? response.json() : null).then(complaints => { if (Array.isArray(complaints) && complaints.length) data.complaints = complaints; }).catch(() => {});
+        fetch(`${API_BASE_URL}/complaints`).then(response => response.ok ? response.json() : null).then(complaints => { if (Array.isArray(complaints) && complaints.length) { data.complaints = complaints; displayOptions(); } }).catch(() => {});
     </script>
 </body>
 </html>
