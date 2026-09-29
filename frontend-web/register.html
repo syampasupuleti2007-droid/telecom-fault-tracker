@@ -446,6 +446,14 @@
                 window.location.href = 'index.html';
             }, 1400);
         });
+
+        try {
+            if (localStorage.getItem('telecom_registered') === 'true') {
+                window.location.href = 'index.html';
+            }
+        } catch (error) {
+            // Ignore localStorage errors in restricted browser sessions.
+        }
     </script>
 </body>
 </html>

@@ -233,5 +233,22 @@
         fetch(`${API_BASE_URL}/subscribers`).then(response => response.ok ? response.json() : null).then(subscribers => { if (Array.isArray(subscribers) && subscribers.length) { data.subscribers = subscribers; displayOptions(); } }).catch(() => {});
         fetch(`${API_BASE_URL}/complaints`).then(response => response.ok ? response.json() : null).then(complaints => { if (Array.isArray(complaints) && complaints.length) { data.complaints = complaints; displayOptions(); } }).catch(() => {});
     </script>
+    <script>
+        try {
+            const hasAccount = localStorage.getItem('telecom_registered') === 'true';
+            const isLoginPage = window.location.pathname.endsWith('login.html');
+            const isRegisterPage = window.location.pathname.endsWith('register.html');
+
+            if (!hasAccount && !isLoginPage && !isRegisterPage) {
+                window.location.href = 'login.html';
+            }
+
+            if (isLoginPage && hasAccount) {
+                window.location.href = 'index.html';
+            }
+        } catch (error) {
+            // Ignore localStorage errors in restricted browser sessions.
+        }
+    </script>
 </body>
 </html>
