@@ -438,7 +438,7 @@
                 role: newSubscriber.role,
                 password: password
             }));
-            localStorage.setItem('telecom_registered', 'true');
+            sessionStorage.setItem('telecom_registered', 'true');
             successMessage.classList.add('visible');
             registrationForm.reset();
 

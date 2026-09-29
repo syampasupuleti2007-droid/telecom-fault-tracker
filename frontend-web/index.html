@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Telecom Fault Tracker & Churn Prediction NOC Dashboard</title>
     <meta name="description" content="Real-time telecom cell tower network fault tracking, graph topology visualizer, and subscriber churn risk prediction NOC platform.">
+    <script>
+        try {
+            if (!sessionStorage.getItem('telecom_registered')) {
+                window.location.replace('login.html');
+            }
+        } catch (error) {
+            window.location.replace('login.html');
+        }
+    </script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -53,8 +62,10 @@
         /* Header Navigation */
         .navbar {
             display: flex;
+            flex-wrap: wrap;
             align-items: center;
             justify-content: space-between;
+            gap: 1rem;
             padding: 1rem 2rem;
             background: rgba(13, 18, 30, 0.85);
             backdrop-filter: blur(16px);
@@ -92,8 +103,15 @@
 
         .nav-meta {
             display: flex;
+            flex: 1 1 720px;
+            flex-wrap: wrap;
             align-items: center;
-            gap: 1.5rem;
+            justify-content: flex-end;
+            gap: 0.65rem;
+        }
+
+        .nav-meta > .btn {
+            white-space: nowrap;
         }
 
         .status-pill {
@@ -498,6 +516,34 @@
             }
         }
 
+        @media (max-width: 900px) {
+            .navbar { padding: 1rem 1.25rem; }
+            .nav-meta { justify-content: flex-start; }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-container { padding: 1rem; gap: 1rem; }
+            .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+            .metric-card { padding: 1rem; }
+            .panel { padding: 1rem; }
+            .panel-header { align-items: flex-start; flex-wrap: wrap; gap: 0.75rem; }
+            .panel-header > div:last-child { flex-wrap: wrap; }
+            .canvas-wrapper { height: 340px; }
+        }
+
+        @media (max-width: 560px) {
+            .navbar { padding: 0.85rem 1rem; }
+            .brand { font-size: 1rem; }
+            .nav-meta > .btn { flex: 1 1 calc(50% - 0.65rem); justify-content: center; }
+            .status-pill { flex: 1 1 100%; justify-content: center; }
+            .settings-wrap, .clock-display { flex: 1 1 calc(50% - 0.65rem); }
+            .settings-wrap label { justify-content: center; }
+            .metrics-grid { grid-template-columns: 1fr; }
+            .metric-val { font-size: 1.55rem; }
+            .company-strip { padding: 1rem; }
+            .canvas-wrapper { height: 280px; }
+        }
+
         /* Glass Panel */
         .panel {
             background: var(--bg-card);
@@ -505,6 +551,7 @@
             border: 1px solid var(--border-color);
             border-radius: 18px;
             padding: 1.5rem;
+            min-width: 0;
             display: flex;
             flex-direction: column;
             gap: 1rem;
@@ -734,6 +781,7 @@
 
         .table-responsive {
             width: 100%;
+            min-width: 0;
             overflow-x: auto;
         }
 
@@ -1310,14 +1358,6 @@
     </div>
 
     <script>
-        try {
-            if (!localStorage.getItem('telecom_registered')) {
-                window.location.href = 'login.html';
-            }
-        } catch (error) {
-            // Ignore localStorage errors in restricted browser sessions.
-        }
-
         const savedTheme = localStorage.getItem('telecom_theme') || 'dark';
         const themeSelector = document.getElementById('themeSelector');
 
