@@ -90,9 +90,12 @@ const state = {
 // Canvas references
 let canvas, ctx;
 let pulsePhase = 0;
+let networkMap = null;
+let mapMarkers = [];
 
 document.addEventListener("DOMContentLoaded", () => {
     initCanvas();
+    initMap();
     setupEventListeners();
     updateLiveClock();
     setInterval(updateLiveClock, 1000);
@@ -197,6 +200,81 @@ function initCanvas() {
     canvas.addEventListener("mousedown", onCanvasMouseDown);
     canvas.addEventListener("mousemove", onCanvasMouseMove);
     canvas.addEventListener("mouseup", onCanvasMouseUp);
+}
+
+function initMap() {
+    const mapContainer = document.getElementById("networkMap");
+    if (!mapContainer || typeof L === "undefined") return;
+
+    if (!networkMap) {
+        networkMap = L.map("networkMap", {
+            zoomControl: true,
+            scrollWheelZoom: true
+        }).setView([40.72, -74.02], 10);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "&copy; OpenStreetMap contributors"
+        }).addTo(networkMap);
+    }
+
+    renderMap();
+    setTimeout(() => {
+        if (networkMap) {
+            networkMap.invalidateSize();
+        }
+    }, 200);
+}
+
+function renderMap() {
+    if (!networkMap || typeof L === "undefined") return;
+
+    mapMarkers.forEach(marker => networkMap.removeLayer(marker));
+    mapMarkers = [];
+
+    state.towers.forEach(tower => {
+        if (!tower.latitude || !tower.longitude) return;
+
+        const marker = L.circleMarker([tower.latitude, tower.longitude], {
+            radius: tower.isFaulty ? 10 : 8,
+            color: tower.isFaulty ? "#ef4444" : "#10b981",
+            fillColor: tower.isFaulty ? "#ef4444" : "#10b981",
+            fillOpacity: 0.9,
+            weight: 2
+        }).addTo(networkMap);
+
+        const popupInfo = `
+            <div style="font-family: Inter, sans-serif; min-width: 170px; line-height: 1.5;">
+                <div style="font-weight: 800; margin-bottom: 4px; color: #0f172a;">${tower.towerName}</div>
+                <div style="font-size: 12px; color: #334155;">Status: ${tower.isFaulty ? "Faulty" : "Operational"}</div>
+                <div style="font-size: 12px; color: #334155;">Tower ID: ${tower.towerId}</div>
+            </div>
+        `;
+
+        marker.bindPopup(popupInfo, {
+            autoClose: true,
+            closeButton: true,
+            closeOnClick: true
+        });
+
+        marker.on("click", function () {
+            if (marker.isPopupOpen()) {
+                marker.closePopup();
+            } else {
+                marker.openPopup();
+            }
+            state.selectedTower = tower;
+            renderAll();
+        });
+
+        mapMarkers.push(marker);
+    });
+
+    if (state.selectedTower && state.selectedTower.latitude && state.selectedTower.longitude) {
+        networkMap.flyTo([state.selectedTower.latitude, state.selectedTower.longitude], 11, {
+            animate: true,
+            duration: 0.8
+        });
+    }
 }
 
 function resizeCanvas() {
@@ -836,6 +914,7 @@ function renderAll() {
     renderCustomerSearchOptions();
     updateMLPredictorUI();
     updateBackendStatusBadge(state.backendConnected);
+    renderMap();
 }
 
 /* ==========================================================================
@@ -938,10 +1017,10 @@ function setupEventListeners() {
         complaintForm.addEventListener("submit", async (e) => {
             e.preventDefault();
             const subId = parseInt(document.getElementById("modalSubSelect").value);
-            const towerId = parseInt(document.getElementById("modalTowerSelect").value);
             const category = document.getElementById("modalCategorySelect").value;
             const severity = document.getElementById("modalSeveritySelect").value;
             const desc = document.getElementById("modalDescription").value || "Subscriber reported network degradation.";
+            const towerId = inferTowerForComplaint(subId, category, desc);
 
             const newComp = {
                 complaintId: getNextComplaintId(),
@@ -979,11 +1058,12 @@ function setupEventListeners() {
             state.complaints.unshift(newComp);
             saveComplaintsToStorage();
 
-            // Check if complaints on tower trigger fault
-            const towerOpenCount = state.complaints.filter(c => c.towerId === towerId && c.status === "open").length;
-            if (towerOpenCount >= 3) {
-                const tower = state.towers.find(t => t.towerId === towerId);
-                if (tower) tower.isFaulty = true;
+            const tower = state.towers.find(t => Number(t.towerId) === Number(towerId));
+            if (tower && (category === "network_fault" || category === "coverage" || category === "call_drops")) {
+                const towerOpenCount = state.complaints.filter(c => Number(c.towerId) === Number(towerId) && c.status === "open").length;
+                if (towerOpenCount >= 2) {
+                    tower.isFaulty = true;
+                }
             }
 
             closeModal();
@@ -992,14 +1072,44 @@ function setupEventListeners() {
     }
 }
 
+function inferTowerForComplaint(subscriberId, category, description = "") {
+    const subscriber = state.subscribers.find(s => Number(s.subscriberId) === Number(subscriberId));
+    const combinedText = `${category || ""} ${description || ""}`.toLowerCase();
+
+    const mentionedTower = state.towers.find(tower => {
+        const towerName = tower.towerName.toLowerCase();
+        return combinedText.includes(towerName) || combinedText.includes(towerName.replace(/\s+/g, ""));
+    });
+    if (mentionedTower) {
+        return mentionedTower.towerId;
+    }
+
+    const currentTowerId = subscriber ? Number(subscriber.connectedTowerId) : null;
+    const currentTower = currentTowerId ? state.towers.find(t => Number(t.towerId) === currentTowerId) : null;
+    if (currentTower && !currentTower.isFaulty) {
+        return currentTower.towerId;
+    }
+
+    const preferredTower = currentTower || state.towers.find(t => !t.isFaulty) || state.towers[0];
+    if (!preferredTower) {
+        return 1;
+    }
+
+    const severityKeywords = ["outage", "fault", "down", "dead", "coverage", "drop", "slow", "disconnect", "no signal", "network"];
+    const categoryBoost = ["network_fault", "call_drops", "coverage", "slow_data"].includes(category) ? 1 : 0;
+
+    if (categoryBoost || severityKeywords.some(keyword => combinedText.includes(keyword))) {
+        const repairCandidate = state.towers.find(t => !t.isFaulty && t.towerId !== preferredTower.towerId);
+        if (repairCandidate) return repairCandidate.towerId;
+    }
+
+    return Number(preferredTower.towerId);
+}
+
 function populateModalDropdowns() {
     const subSelect = document.getElementById("modalSubSelect");
-    const towerSelect = document.getElementById("modalTowerSelect");
 
     if (subSelect) {
         subSelect.innerHTML = state.subscribers.map(s => `<option value="${s.subscriberId}">${s.name} (${s.email})</option>`).join("");
-    }
-    if (towerSelect) {
-        towerSelect.innerHTML = state.towers.map(t => `<option value="${t.towerId}">${t.towerName} ${t.isFaulty ? '(Faulty)' : ''}</option>`).join("");
     }
 }

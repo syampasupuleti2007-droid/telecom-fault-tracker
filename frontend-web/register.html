@@ -138,6 +138,26 @@
             margin-bottom: 1.25rem;
         }
 
+        .profile-avatar-card {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .profile-avatar-badge {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--primary), var(--accent-cyan));
+            border: 3px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 12px 30px rgba(99, 102, 241, 0.35);
+            font-size: 1.8rem;
+        }
+
         .eyebrow {
             display: inline-block;
             font-size: 0.7rem;
@@ -312,6 +332,11 @@
 
         <section class="auth-panel">
             <div class="form-card">
+                <div class="profile-avatar-card">
+                    <div class="profile-avatar-badge" aria-label="Customer profile icon">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                </div>
                 <div class="form-header">
                     <div class="eyebrow">Sign Up</div>
                     <h1>Register Account</h1>
@@ -407,6 +432,12 @@
 
             savedSubscribers.push(newSubscriber);
             localStorage.setItem('telecom_subscribers', JSON.stringify(savedSubscribers));
+            localStorage.setItem('telecom_customer_profile', JSON.stringify({
+                name: newSubscriber.name,
+                email: newSubscriber.email,
+                role: newSubscriber.role,
+                password: password
+            }));
             localStorage.setItem('telecom_registered', 'true');
             successMessage.classList.add('visible');
             registrationForm.reset();

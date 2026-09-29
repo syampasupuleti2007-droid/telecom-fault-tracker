@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     
     <style>
         :root {
@@ -231,6 +232,76 @@
             border: 1px solid rgba(34, 211, 238, 0.22);
             border-radius: 16px;
             padding: 1.15rem 1.35rem;
+        }
+
+        .profile-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.7rem;
+            padding: 0.5rem 0.8rem;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            color: var(--text-main);
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.2);
+        }
+
+        .profile-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--primary), var(--accent-cyan));
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .profile-meta {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+
+        .profile-label {
+            font-size: 0.62rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .profile-name {
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .profile-summary {
+            align-self: flex-start;
+            padding: 0.7rem 1rem;
+            border-radius: 12px;
+            width: min(100%, 360px);
+            background: rgba(15, 23, 42, 0.72);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.2);
+        }
+
+        .profile-summary .profile-name {
+            font-size: 0.9rem;
+        }
+
+        .profile-summary .profile-meta {
+            min-width: 0;
+        }
+
+        .profile-summary .profile-email {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .company-name {
@@ -611,6 +682,56 @@
         .risk-badge.CRITICAL { background: rgba(239, 68, 68, 0.4); color: #ff0000; box-shadow: 0 0 10px rgba(239,68,68,0.5); }
 
         /* Tables */
+        .network-insights-section {
+            margin-top: 0.5rem;
+            padding-top: 0.25rem;
+        }
+
+        .network-insights-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .network-insight-card {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 1.2rem;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.2);
+        }
+
+        .network-insight-image {
+            width: 100%;
+            height: 100%;
+            min-height: 220px;
+            object-fit: cover;
+            display: block;
+            background: rgba(99, 102, 241, 0.14);
+        }
+
+        .network-insight-body {
+            padding: 1.2rem 1.4rem 1.3rem 0;
+        }
+
+        .network-insight-body h3 {
+            font-size: 1.15rem;
+            margin-bottom: 0.8rem;
+            color: var(--text-main);
+        }
+
+        .network-insight-body p {
+            margin: 0;
+            color: var(--text-muted);
+            line-height: 1.9;
+            font-size: 0.98rem;
+            text-align: justify;
+        }
+
         .table-responsive {
             width: 100%;
             overflow-x: auto;
@@ -832,6 +953,15 @@
             </div>
         </section>
 
+        <div id="customerProfileSummary" class="profile-summary profile-chip" aria-label="Registered customer profile">
+            <div class="profile-avatar" style="width: 28px; height: 28px; font-size: 0.8rem;"><i class="fa-solid fa-user"></i></div>
+            <div class="profile-meta">
+                <span class="profile-label">Registered Customer</span>
+                <span id="customerProfileSummaryName" class="profile-name">Guest Customer</span>
+                <span id="customerProfileSummaryEmail" class="profile-email">guest@example.com</span>
+            </div>
+        </div>
+
         <!-- Metrics Row -->
         <div class="metrics-grid">
             <div class="metric-card">
@@ -897,10 +1027,13 @@
                 <div class="canvas-wrapper">
                     <canvas id="topologyCanvas"></canvas>
                 </div>
-                <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; justify-content: space-between;">
+                <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 0.5rem;">
                     <span><i class="fa-solid fa-circle" style="color: var(--success);"></i> Operational Tower</span>
                     <span><i class="fa-solid fa-circle" style="color: var(--danger);"></i> Faulty Tower (Pulsing)</span>
                     <span><i class="fa-solid fa-info-circle"></i> Click any tower node to inspect or toggle fault</span>
+                </div>
+                <div class="map-panel">
+                    <div id="networkMap" aria-label="Live telecom tower geographic map"></div>
                 </div>
             </div>
 
@@ -1086,6 +1219,42 @@
             </div>
         </div>
 
+        <section class="network-insights-section" aria-label="Network operations insights">
+            <div class="panel" style="padding: 1.25rem;">
+                <div class="panel-header" style="margin-bottom: 0.5rem;">
+                    <div class="panel-title">
+                        <i class="fa-solid fa-satellite-dish"></i>
+                        <span>Network Performance Insights</span>
+                    </div>
+                </div>
+                <div class="network-insights-grid">
+                    <article class="network-insight-card">
+                        <img class="network-insight-image" src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=900&q=80" alt="Telecom tower network infrastructure" />
+                        <div class="network-insight-body">
+                            <h3>Signal Health Monitoring</h3>
+                            <p>Continuous monitoring across the tower mesh is essential for maintaining stable telecom performance in dense urban and suburban regions. By tracking signal strength, call quality, and service interruption patterns, the network operations team can detect weak coverage zones early and isolate faults before they escalate into repeated customer complaints. This kind of visibility allows proactive maintenance, better resource prioritization, and a more consistent day-to-day subscriber experience across the entire service footprint.</p>
+                        </div>
+                    </article>
+
+                    <article class="network-insight-card">
+                        <img class="network-insight-image" src="https://images.unsplash.com/photo-1558494949cc2f2a36b7f17e4b3e0f7ef?auto=format&fit=crop&w=900&q=80" alt="Telecom network backup systems" />
+                        <div class="network-insight-body">
+                            <h3>Redundancy & Backup Routing</h3>
+                            <p>Telecom networks are designed to maintain continuity even when one sector or tower experiences degradation, and that resilience depends heavily on intelligent rerouting. When a tower begins to fail or a particular region shows elevated call-drop activity, traffic can be shifted to adjacent operational towers with healthier capacity. This process protects voice quality, preserves data connectivity, and reduces churn risk by preventing minor faults from becoming major service disruptions. In practical terms, backup routing acts as the first line of defense against network instability.</p>
+                        </div>
+                    </article>
+
+                    <article class="network-insight-card">
+                        <img class="network-insight-image" src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=900&q=80" alt="Field engineers working on telecom equipment" />
+                        <div class="network-insight-body">
+                            <h3>Response Coordination</h3>
+                            <p>Rapid response is only effective when field teams, NOC engineers, and support staff are aligned around the same operational picture. By connecting complaint severity, affected subscriber data, tower health, and likely service impact, the response workflow becomes faster and more precise. Engineers can prioritize the correct site, dispatch the right crew, and coordinate faster restoration without wasting time on broad manual checks. This creates a more efficient incident lifecycle, shorter downtime, and better customer confidence during critical network events.</p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
     </div>
 
     <!-- Modal: Log New Complaint -->
@@ -1102,13 +1271,6 @@
                 <div class="form-group">
                     <label class="form-label">Subscriber</label>
                     <select class="form-control" id="modalSubSelect">
-                        <!-- Populated by JS -->
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Cell Tower</label>
-                    <select class="form-control" id="modalTowerSelect">
                         <!-- Populated by JS -->
                     </select>
                 </div>
@@ -1148,12 +1310,35 @@
     </div>
 
     <script>
-        if (!localStorage.getItem('telecom_registered')) {
-            window.location.href = 'register.html';
+        try {
+            if (!localStorage.getItem('telecom_registered')) {
+                window.location.href = 'login.html';
+            }
+        } catch (error) {
+            // Ignore localStorage errors in restricted browser sessions.
         }
 
         const savedTheme = localStorage.getItem('telecom_theme') || 'dark';
         const themeSelector = document.getElementById('themeSelector');
+
+        function renderCustomerProfile() {
+            const summaryName = document.getElementById('customerProfileSummaryName');
+            const summaryEmail = document.getElementById('customerProfileSummaryEmail');
+
+            let customer = null;
+            try {
+                customer = JSON.parse(localStorage.getItem('telecom_customer_profile') || 'null');
+            } catch (error) {
+                customer = null;
+            }
+
+            const displayName = customer && customer.name ? customer.name : 'Guest';
+            const displayEmail = customer && customer.email ? customer.email : 'guest@example.com';
+            const displayRole = customer && customer.role ? customer.role : 'Customer';
+
+            if (summaryName) summaryName.textContent = displayName;
+            if (summaryEmail) summaryEmail.textContent = `${displayEmail} • ${displayRole}`;
+        }
 
         function applyTheme(theme) {
             document.body.classList.toggle('light-theme', theme === 'light');
@@ -1164,6 +1349,7 @@
         }
 
         applyTheme(savedTheme);
+        renderCustomerProfile();
 
         if (themeSelector) {
             themeSelector.addEventListener('change', (event) => {
@@ -1173,6 +1359,7 @@
     </script>
 
     <!-- Application Script -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="js/app.js"></script>
 </body>
 </html>
