@@ -1110,6 +1110,28 @@ function populateModalDropdowns() {
     const subSelect = document.getElementById("modalSubSelect");
 
     if (subSelect) {
+        let customer = null;
+        try {
+            customer = JSON.parse(localStorage.getItem("telecom_customer_profile") || "null");
+        } catch (error) {
+            customer = null;
+        }
+
+        let customerSubscriber = customer && customer.email
+            ? state.subscribers.find(subscriber => subscriber.email && subscriber.email.toLowerCase() === customer.email.toLowerCase())
+            : null;
+
+        if (!customerSubscriber && customer && customer.email) {
+            const storedSubscriber = getStoredSubscribers().find(subscriber => subscriber.email && subscriber.email.toLowerCase() === customer.email.toLowerCase());
+            if (storedSubscriber) {
+                state.subscribers.push(storedSubscriber);
+                customerSubscriber = storedSubscriber;
+            }
+        }
+
         subSelect.innerHTML = state.subscribers.map(s => `<option value="${s.subscriberId}">${s.name} (${s.email})</option>`).join("");
+        if (customerSubscriber) {
+            subSelect.value = String(customerSubscriber.subscriberId);
+        }
     }
 }
